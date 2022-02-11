@@ -1,0 +1,49 @@
+@font-face {
+  font-family: "squid";
+  src: url("GameOfSquids-1GMVL.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  background-color: antiquewhite;
+}
+
+nav ul {
+  display: flex;
+  justify-content: center;
+  list-style-type: none;
+  padding: 3px;
+  border: 3px solid forestgreen;
+}
+
+nav ul li {
+  margin-left: 35px;
+  margin-right: 35px;
+}
+
+nav,
+h1,
+h2 {
+  font-family: "squid", sans-serif;
+}
+nav a {
+    text-decoration: none;
+    color: forestgreen;
+}
+
+h1,
+h2 {
+  text-align: center;
+}
+
+#centre {
+  height: 60vh;
+  width: 100vw;
+  background-image: url("/img/pont.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  position: absolute;
+  bottom: 30px;
+}
