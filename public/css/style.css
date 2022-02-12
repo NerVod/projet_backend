@@ -25,12 +25,13 @@ nav ul li {
 
 nav,
 h1,
-h2 {
+h2,
+#retourHome {
   font-family: "squid", sans-serif;
 }
 nav a {
-    text-decoration: none;
-    color: forestgreen;
+  text-decoration: none;
+  color: forestgreen;
 }
 
 h1,
@@ -46,4 +47,22 @@ h2 {
   background-position: center;
   position: absolute;
   bottom: 30px;
+}
+
+/* page 404 */
+#retourHome {
+  
+  color: brown;
+  width: 100%;
+  display: inline-block;
+  text-align: center;
+  margin-top: 4em;
+  margin-bottom: 3em;
+  font-size: 25px;
+}
+
+#soldat {
+  display: block;
+  margin: auto;
+  margin-top: 6em;
 }

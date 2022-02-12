@@ -20,6 +20,8 @@
   "homepage": "https://github.com/NerVod/projet_backend#readme",
   "dependencies": {
     "express": "^4.17.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^4.3.1",
     "nodemon": "^2.0.15",
     "socket.io": "^4.4.1"
   }

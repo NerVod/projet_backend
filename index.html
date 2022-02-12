@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squid Game</title>
     <link rel="stylesheet" href="/css/style.css">
+    <title>Squid Game</title>
 </head>
 <body>
     <nav>
@@ -18,6 +18,19 @@
 
     <h1>Squid Game</h1>
     <h2>Qui survivra le plus longtemps ?</h2>
+<p>Nouveau survivant ? Inscrit-toi si tu l'oses ...</p>
+<form action="/login" method="POST">
+    <label for="gamertag">Nom de Joueur :</label>
+    <input type="text" id="gamertag" name="gamertag">
+    <label for="numero">Numéro de joueur  (de 1 à 256) :</label>
+    <input type="number" id="numero" name="numero" max="256">
+    <label for="email">E-mail</label>
+    <input type="email" id="email" name="email">
+    <label for="password">Mot de passe : </label>
+    <input type="password" id="password" name="password">
+    <button type="submit">Obéir</button>
+  </form>
+
 <div id="centre"></div>
 
 <script src="/socket.io/socket.io.min.js"></script>
