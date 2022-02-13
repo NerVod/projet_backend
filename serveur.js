@@ -1,71 +1,98 @@
-const express = require('express');
-const PORT = 8080;
-const path = require('path');
-const jwt = require('jsonwebtoken');
-const { MongoClient } = require('mongodb')
+import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import session from 'express-session';
+import jwt from 'jsonwebtoken';
+import { MongoClient }from 'mongodb';
+import MongoSore from 'connect-mongo';
+import { encrypt } from './public/js/user.js';
+import MongoStore from 'connect-mongo';
 
-const { encrypt } = require('./public/js/user.js')
+
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const url = "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/bddAjax?retryWrites=true&w=majority";
 
+const url = "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/jeumulti?retryWrites=true&w=majority";
 const dbName = "jeumulti";
 const coll = "players";
+
+
 
 const config = {
     port: process.env.port || 8080,
     host: process.env.HOST || '127.0.0.1'
 }
-// const __filename = fileURLtoPath(import.meta.url);
-// const __dirname = dirname(__filename);
 
 
-app.use('/html', express.static(path.join(__dirname, "public/html")))
+app.use('/html', express.static(path.join(__dirname, "public","html")))
 app.use('/css', express.static(path.join(__dirname, "public/css")))
 app.use('/js', express.static(path.join(__dirname, "public/js")))
 app.use('/img', express.static(path.join(__dirname, "public/images")))
 app.use('/.ttf', express.static(path.join(__dirname, "public/font")))
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(session({
+    secret:"ThisIsHellOf@TastyBurger",
+    store: MongoStore.create({
+        mongoUrl: url,
+        collectionName: 'sessions'
+    })
+    
+}))
 
 
-app.post('/login', (req, res) => {
+
+
+
+
+app.post('/register', (req, res) => {
     // // auth user
     // const user = { id: 1 };
     // const token = jwt.sign({ user } , 'whatADamnSecret');
     // res.json({
     //     token: token
     // })
-    console.log('route /login invoquée');
-    console.log('corps de la requeête :', req.body);
+    console.log('route /register invoquée');
+    console.log('corps de la requête :', req.body);
     const gamertag = req.body.gamertag;
     const email = req.body.email;
-    const password = encrypt(body.passord)
+    const numero = req.body.numero;
+    const password = encrypt(`${req.body.password}`)
 
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName)
         const collection = db.collection(coll);
 
-        collection.findOne({email : email}, (err, document) => {
+        collection.findOne({email: email}, (err, joueur) => {
             console.log("step 1");
             if (err) {
-                console.log("erreur connecion mongo : ", err);
+                console.log("erreur connexion mongo : ", err);
                 client.close();
             } else {
                 if(!joueur) {
                     console.log('step 2');
+                    const token = jwt.sign({ gamertag }, 'WhatADamnSecret');
+                    
                     collection.insertOne(
                         {
                             gamertag: gamertag,
                             email: email,
-                            password: encrypt(password)
-                        }, (err, document) => {
+                            numero: numero,
+                            password: password,
+                            token: token,
+                        }, (err, joueur) => {
                             console.log('step 3');
                             console.log(joueur);
                             client.close();
                         }
                     );
                 } else {
-                    console.log('Un compote existe déjà sur cet email ')
+                    console.log('Un compte existe déjà sur cet email ');
+                    res.sendFile(`${__dirname}/erreurcompte.html`)
                 }
 
                 console.log('step final')
@@ -76,18 +103,32 @@ app.post('/login', (req, res) => {
 
 })
 
-app.get('/jeu', verifToken , function(req, res) {
-    jwt.verify(req.token, 'whatADamnSecret', function(err, data) {
-        if(err) {
-            res.status(403);
-        }else {
-            res.json({
-                text: ' page du jeu',
-                data: data
-            });
-        }
-    });
-    })
+
+
+app.post('/login'), (req, res) => {
+    session = req.session;
+    if(session.userid){
+        res.sendFile(`${__dirname}/jeu.html`)
+    } else {
+        res.sendFile(`${__dirname}/index.html`)
+    }
+}
+
+
+
+
+// app.get('/jeu', verifToken , function(req, res) {
+//     jwt.verify(req.token, 'whatADamnSecret', function(err, data) {
+//         if(err) {
+//             res.status(403);
+//         }else {
+//             res.json({
+//                 text: ' page du jeu',
+//                 data: data
+//             });
+//         }
+//     });
+//     })
 
 function verifToken(req, res, next) {
     const bearerHeader = req.headers["authorization"];
@@ -103,6 +144,9 @@ function verifToken(req, res, next) {
 
 app.use('/squid',(req, res) => {
     res.sendFile(`${__dirname}/index.html`)
+});
+app.use('/inscription',(req, res) => {
+    res.sendFile(`${__dirname}/inscription.html`)
 });
 app.use('/',(req, res) => {
     res.sendFile(`${__dirname}/404.html`)
@@ -122,22 +166,22 @@ const httpServer = app.listen(config.port, () => {
 
 // websocket
 
-const io = require('socket.io')
-const Server = io.Server
-const ioServer = new Server(httpServer)
+// const io = require('socket.io')
+// const Server = io.Server
+// const ioServer = new Server(httpServer)
 
-let players = {};
+// let players = {};
 
-ioServer.on('connection', (socket) => {
-    if (players.length <= 2 ){
+// ioServer.on('connection', (socket) => {
+//     if (players.length <= 2 ){
 
-        const onePlayer = {
-            id: this.playerName,
-            avatar: this.playerAvatar
-        }
+//         const onePlayer = {
+//             id: this.playerName,
+//             avatar: this.playerAvatar
+//         }
 
-        players[onePlayer.id] = onePlayer
+//         players[onePlayer.id] = onePlayer
 
-    }
-})
+//     }
+// })
 

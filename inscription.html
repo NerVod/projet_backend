@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
+    <title>Inscription</title>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/squid">Retour Page d'accueil</a></li>
+        </ul>
+    </nav>
+    
+
+    <h1>Squid Game</h1>
+    <h2>Nouveau survivant ? Inscrit-toi si tu l'oses ...</h2>
+
+<form action="/register" method="POST">
+    <label for="gamertag">Nom de Joueur :</label>
+    <input type="text" id="gamertag" name="gamertag" required>
+    <label for="numero">Numéro de joueur  (de 1 à 256) :</label>
+    <input type="number" id="numero" name="numero" max="256" required>
+    <label for="email">E-mail</label>
+    <input type="email" id="email" name="email" required>
+    <label for="password">Mot de passe : </label>
+    <input type="password" id="password" name="password" required>
+    <button type="submit">Obéir</button>
+  </form>
+
+  <div id="registerMessage"></div>
+
+  <img class="soldat" src="/img/soldat-triangle.jpg" alt="soldat au symbole triangle sur le casque">
+
+<script src="/socket.io/socket.io.min.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>

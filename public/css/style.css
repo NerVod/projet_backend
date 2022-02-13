@@ -26,6 +26,7 @@ nav ul li {
 nav,
 h1,
 h2,
+p,
 #retourHome {
   font-family: "squid", sans-serif;
 }
@@ -61,7 +62,7 @@ h2 {
   font-size: 25px;
 }
 
-#soldat {
+.soldat {
   display: block;
   margin: auto;
   margin-top: 6em;

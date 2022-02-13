@@ -1,9 +1,9 @@
-const crypto = require("crypto");
+import crypto from "crypto";
 
 const key = crypto.randomBytes(32);
 const iv = crypto.randomBytes(16);
 
-function encrypt(text) {
+export function encrypt(text) {
   let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -24,4 +24,3 @@ function decrypt(text) {
 // console.log(decrypt(hw));
 
 
-module.exports= encrypt
