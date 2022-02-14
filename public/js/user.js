@@ -1,14 +1,14 @@
-import crypto from "crypto";
+const  crypto = require("crypto");
 
 const key = crypto.randomBytes(32);
 const iv = crypto.randomBytes(16);
 
-export function encrypt(text) {
+module.exports = { encrypt(text) {
   let cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return { iv: iv.toString("hex"), encryptedData: encrypted.toString("hex") };
-}
+}}
 
 function decrypt(text) {
   let iv = Buffer.from(text.iv, "hex");

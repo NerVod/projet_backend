@@ -1,30 +1,17 @@
 window.document.addEventListener('DOMContentLoaded', () => {
 
-    async function connect(gamertag, password) {
-        const headers = new Headers();
-        headers.append('Content-Type', 'application.json');
+    console.log('index.js chargé')
 
-        const options = {
-            method: 'POST',
-            mode: 'cors',
-            body: JSON.stringify({
-                gamertag,
-                password
-            }),
-            headers    
-            };
-            const response = await fetch('https://localhost/squid/login', options);
-            return response.json()
-        };
+const players=[]
 
 
+const socket = io('http://localhost:8080');
 
-        const tokens = await connect(gamertag, password);
+socket.on('addOnePlayer', (player) => {
+    players.push(onePlayer)
+})
 
-        localStorage.setItem('token', JSON.stringify(tokens));
-
-
-
+console.log(players[0])
 
 
 
