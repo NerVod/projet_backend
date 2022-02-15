@@ -4,8 +4,10 @@ const  session = require('express-session');
 const  jwt = require('jsonwebtoken');
 const  { MongoClient } = require('mongodb');
 const MongoStore = require('connect-mongo')(session);
+const  { encrypt } = require('./public/js/user.js');
 const mongoose = require('mongoose');
-
+const user = require('./public/js/user.js');
+const { decrypt } = require('session-file-store/lib/session-file-helpers');
 
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
@@ -73,7 +75,6 @@ app.use(session({
     cookie: {
         maxAge: 1000*60*60*24
     },
-    
 
 }));
 
@@ -162,8 +163,6 @@ app.post('/register', (req, res) => {
 ////////////////////////////////////// Connexion au compte utilisateur //////////////////////////////////////
 
 
-
-
 app.post('/login', (req, res) => {
 
     console.log('route /login invoquée');
@@ -171,52 +170,52 @@ app.post('/login', (req, res) => {
     const gamertag = req.body.gamertag;
     const email = req.body.emaillog;
     const numero = req.body.numero;
-    const password = req.body.password
-    
+    // const password = encrypt(`${req.body.password}`)
+    const password = bcrypt.hashSync(`${req.body.password}`, salt)
+    console.log('bcrypt : ', password)
 
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName)
         const collection = db.collection(coll);
-        // const query = {
-        //     Gamertag: gamertag,
-        //     Email: email,
-        //     Numero: numero,
-        //     Password: password
-        // }
+        const query = {
+            // Gamertag: gamertag,
+            Email: email,
+            // Numero: numero,
+            Password: password
+        }
 
 
-        collection.findOne({email: email})
-                .then((joueur) => {
-                    console.log('joueur trouvé ', joueur);
-                    if(joueur) {
-                        bcrypt
-                        .compare(password, joueur.password)
-                        .then((isValid) => {
-                            if(!isValid) {
-                                console.log('Erreur d\'identification ');
-                                res.render('accueil', {
-                                message : 'Erreur d\'identification, vérifiez votre saisie !'
-                            });
-                            client.close()
-                            } else {
-                                console.log('comparaison mdp réussie', joueur);
-                                const token = jwt.sign({name: gamertag}, 'WhatADamnSecret');
-                                console.log('token au login :', token);
-                                req.session[req.sessionID]={
-                                    alias: gamertag,
-                                    token: token
-                                }
-                                res.render('jeu', {
-                                    message : 'Que la parite commence recrue !'
-                                });
+        collection.findOne({email: email}, (err, joueur) => {
+            console.log("step 1 route login");
+            console.log('querybdd :', JSON.stringify(password));
+            console.log('bdd :', JSON.stringify(joueur.password));
+            
+            let saisie = JSON.stringify(password)
+            let comparateur = JSON.stringify(joueur.password)
+            if (err) {
+                console.log("erreur connexion mongo : ", err);
+                client.close();
+            } else {
+                if(saisie === comparateur) {
+                    console.log('indentification réussie ');
+                    res.render('jeu', {
+                        message : 'Connectez-vous à votre compte recrue !'
+                    });
+                     
 
-                            }
-                     })
-                    };
-                })            
+                } else {
+                    console.log('Erreur d\'identification ');
+                    res.render('accueil', {
+                        message : 'Erreur d\'identification, vérifiez votre saisie !'
+                    });
+                }
+
+                console.log('step final')
+            };
+        })
     })
 
-   
+
 })
 
 const httpServer = app.listen(config.port, () => {
@@ -231,59 +230,17 @@ const io = require('socket.io');
 const Server = io.Server;
 const ioServer = new Server(httpServer);
 const uuid = require('uuid');
-const req = require('express/lib/request');
 
 const allPlayers = {}
 
 ioServer.on('connection', (socket) => {
-const pathMaker = function() {
-    let chemin= []
-    for(let i=0; i<10; i++){
-        chemin[i]=  Math.random()
-    }
-    return chemin
-}
 
 const onePlayer = {
-    id: uuid.v4(),
-    chemin: pathMaker(),
-    
-     
+    id: uuid.v4()
 }
 
 allPlayers[onePlayer.id] = onePlayer
 
-ioServer.emit('addOnePlayer', onePlayer );
-
-for(joueurId in allPlayers) {
-    const player = allPlayers[joueurId];
-    ioServer.emit('addOnePlayer', player)
-}
-
-const message = 'message venant du serveur'
-
-ioServer.emit('testMessage', message )
+ioServer.emit('addOnePlayer', onePlayer )
 
 
-socket.on('disconnect', () => {
-    delete allPlayers[onePlayer.id]
-    ioServer.emit('removePlayer', onePlayer)
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-})
