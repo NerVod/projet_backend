@@ -234,76 +234,45 @@ const io = require('socket.io');
 const Server = io.Server;
 const ioServer = new Server(httpServer);
 const uuid = require('uuid');
-const randomColor = require('randomcolor')
 // const req = require('express/lib/request');
 
-const allPlayers= {}
+const allPlayers = {}
 
 ioServer.on('connection', (socket) => {
-    const onePlayer = {
-        id: uuid.v4(),
-        width: '100px',
-        height: '100px',
-        top: 255 + Math.random()*700+'px',
-        left: '30px',
-        position: 'absolute',
-        backgroundColor: randomColor()
+const pathMaker = function() {
+    let chemin= []
+    for(let i=0; i<10; i++){
+        chemin[i]=  Math.random()
     }
-
-
-    allPlayers[onePlayer.id] = onePlayer
-
-    // Créer mon carré
-    // envoyer des données à cette connexion websocket uniquement
-    // socket.emit('identifiant', 'données');
-    // envoyer des données à toutes les connexions websocket sauf la mienne
-    // socket.broadcast.emit('identifiant', 'données');
-    // Ici on envoi des données à travers tous les sockets à tous les front-end
-    ioServer.emit('updateOrCreatePlayer', onePlayer);
-
-
-    // Créer tous les carrés de tous les autres joueurs
-    for(playerId in allPlayers) {
-        const player = allPlayers[playerId];
-        // permet d'envoyer des données à tous les front-end
-        ioServer.emit('updateOrCreatePlayer', player);
-    }
-
-    socket.on('mousemove', (position) => {
-        onePlayer.top = (parseFloat(position.y) - (parseFloat(onePlayer.height) / 2)) + 'px';
-        onePlayer.left = (parseFloat(position.x) - (parseFloat(onePlayer.width) / 2)) + 'px';
-
-        if (parseFloat(onePlayer.top) < 260) return;
-        if (parseFloat(onePlayer.left) < 5) return;
-
-        for(playerId in allPlayers) {
-            const player = allPlayers[playerId];
-            if (parseFloat(player.top) < parseFloat(onePlayer.top)) {
-                console.log(onePlayer.id, 'est en dessous de', player.id);
-            }
-            if (parseFloat(player.left) < parseFloat(onePlayer.left)) {
-                console.log(onePlayer.id, ' est à droite de ', player.id);
-            };
-        }
-        // permet d'envoyer des données à tous les front-end
-        ioServer.emit('updateOrCreatePlayer', onePlayer);
-    });
-
-    socket.on('disconnect', () => {
-        delete allPlayers[onePlayer.id]
-        // permet d'envoyer des données à tous les front-end
-        ioServer.emit('removePlayer', onePlayer);
-    })
-
-
-    socket.on('start', () => {
-        const debutpartie = console.log('start game !')
-       ioServer.emit('begin',debutpartie)
-    })
+    return chemin
+}
 
 
 
+const onePlayer = {
+    id: uuid.v4(),
+    chemin: pathMaker(),
+    
+     
+}
 
+allPlayers[onePlayer.id] = onePlayer
+
+ioServer.emit('addOnePlayer', onePlayer );
+
+for(joueurId in allPlayers) {
+    const player = allPlayers[joueurId];
+    ioServer.emit('addOnePlayer', player)
+}
+
+const message = 'message venant du serveur'
+
+ioServer.emit('testMessage', message )
+
+
+socket.on('disconnect', () => {
+    delete allPlayers[onePlayer.id]
+    ioServer.emit('removePlayer', onePlayer)
 })
 
 
@@ -317,3 +286,9 @@ ioServer.on('connection', (socket) => {
 
 
 
+
+
+
+
+
+})

@@ -1,49 +1,58 @@
 window.document.addEventListener('DOMContentLoaded', () => {
-
     console.log('index.js chargé')
 
-const players=[]
+    const updateOrCreatePlayer = (player) => {
 
-
-const socket = io('http://localhost:8080');
-
-// socket.on('addOnePlayer', (player) => {
-//     players.push(onePlayer)
-// })
-
-
-socket.on('addOnePlayer', (oneplayer) => {
-
-
-        if(players.length < 2 && (!players.includes(oneplayer))){
-            players.push(oneplayer)
+        let divElement = window.document.getElementById(player.id);
+        if (!divElement) {
+            divElement = window.document.createElement('div');
+            divElement.id = player.id;
+            window.document.getElementById('gameArea').appendChild(divElement);
+            // window.document.body.appendChild(divElement);
         }
-    
+        divElement.style.top = player.top;
+        divElement.style.left = player.left;
+        divElement.style.width = player.width;
+        divElement.style.height = player.height;
+        divElement.style.position = player.position;
+        divElement.style.backgroundColor = player.backgroundColor;
+        return divElement;
 
-
-
-
-
-    console.log('tableau des joueurs : ', players)
-})
-
-
-socket.on('testMessage', (message) => {
-    console.log('message du serveur ', message)
-})
-
-
-socket.on('removePlayer', (onePlayer) => {
-    const playerToRemove = players.indexOf(`${onePlayer}`);
-    if(playerToRemove !== -1) {
-        players.splice(playerToRemove, 1);
     }
-    console.log('tableau vidé du joueur :', players)
-})
+   
 
+    const socket = io('http://localhost:8080');
 
+    socket.on('updateOrCreatePlayer', (player) => {
+        const playerElement = updateOrCreatePlayer(player);
+    }) 
 
+    socket.on('removePlayer', (player) => {
+        const divElement = window.document.getElementById(player.id);
+        if(divElement){
+            divElement.parentNode.removeChild(divElement)
+        }
+    })
 
+    window.addEventListener('mousemove', (e) => {
+        const position = {
+            x: e.clientX,
+            y: e.clientY
+        };
+        socket.emit('mousemove', position)
+    })
+
+    
+     const startGame = document.getElementById('startGame')
+     let start = false;
+
+     startGame.addEventListener('click', () => {
+         const start = true
+         socket.emit('start', start )
+     })
+     socket.on('begin',() => {
+        debutpartie()
+     })
 
 
 })
