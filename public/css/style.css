@@ -43,7 +43,7 @@ h2 {
 #centre {
   height: 60vh;
   width: 100vw;
-  background-image: url("/img/pont.jpg");
+  background-image: url("/img/poupee-mortelle.jpg");
   background-repeat: no-repeat;
   background-position: center;
   position: absolute;
@@ -70,7 +70,7 @@ h2 {
 .bienVoir {
   color: crimson;
 }
-.startGame{
+#startGame{
   width: 400px;
   margin-left: 2em;
   color:ghostwhite;
@@ -95,7 +95,7 @@ h2 {
 
 #poupee {
   height: 250px;
-  width: 100px;
+  width: 200px;
   background-image: url(/img/poupee);
   position: absolute;
   top: 50%;
@@ -129,3 +129,4 @@ h2 {
   align-content: center;
   border: 1px solid black;
 }
+

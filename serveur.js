@@ -273,18 +273,18 @@ ioServer.on('connection', (socket) => {
         onePlayer.top = (parseFloat(position.y) - (parseFloat(onePlayer.height) / 2)) + 'px';
         onePlayer.left = (parseFloat(position.x) - (parseFloat(onePlayer.width) / 2)) + 'px';
 
-        if (parseFloat(onePlayer.top) < 260) return;
-        if (parseFloat(onePlayer.left) < 5) return;
+        if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top)> 1060) return;
+        if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left)> 1410) return;
 
-        for(playerId in allPlayers) {
-            const player = allPlayers[playerId];
-            if (parseFloat(player.top) < parseFloat(onePlayer.top)) {
-                console.log(onePlayer.id, 'est en dessous de', player.id);
-            }
-            if (parseFloat(player.left) < parseFloat(onePlayer.left)) {
-                console.log(onePlayer.id, ' est à droite de ', player.id);
-            };
-        }
+        // for(playerId in allPlayers) {
+        //     const player = allPlayers[playerId];
+        //     if (parseFloat(player.top) < parseFloat(onePlayer.top)) {
+        //         console.log(onePlayer.id, 'est en dessous de', player.id);
+        //     }
+        //     if (parseFloat(player.left) < parseFloat(onePlayer.left)) {
+        //         console.log(onePlayer.id, ' est à droite de ', player.id);
+        //     };
+        // }
         // permet d'envoyer des données à tous les front-end
         ioServer.emit('updateOrCreatePlayer', onePlayer);
     });
@@ -297,9 +297,44 @@ ioServer.on('connection', (socket) => {
 
 
     socket.on('start', () => {
-        const debutpartie = console.log('start game !')
-       ioServer.emit('begin',debutpartie)
+        
+        startCount()
+        function reverse() {
+            setTimeout(() => {
+                const value = 'scaleX(-1)'
+                redresse()
+                ioServer.emit('begin', value)
+            }, Math.random()*4000);
+        }
+        function redresse() {
+            setTimeout(() => {
+                const value = 'scaleX(1)'
+                reverse()
+                ioServer.emit('begin', value)
+            }, Math.random()*3500);
+        }
+        
+        function startCount() {
+            reverse()
+            rebase()
+
+        }
+
+        function hideStart() {
+            const boutonValue = 'hidden';
+            ioServer.emit('hide', boutonValue)
+        }
+
+       function rebase() {
+        allPlayers[onePlayer.left] = onePlayer
+        ioServer.emit('begin', onePlayer)
+       }
+
+
     })
+    
+
+
 
 
 

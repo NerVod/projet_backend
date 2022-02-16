@@ -43,16 +43,32 @@ window.document.addEventListener('DOMContentLoaded', () => {
     })
 
     
-     const startGame = document.getElementById('startGame')
-     let start = false;
+     const startGame = document.getElementById('cache')
+     const poupee = document.getElementById('poupee');
 
-     startGame.addEventListener('click', () => {
-         const start = true
-         socket.emit('start', start )
+     startGame.addEventListener('click', () => {      
+        socket.emit('start')
      })
-     socket.on('begin',() => {
-        debutpartie()
+
+
+     socket.on('begin',(value) => {
+         // begin the game :  démarre 123soleil coté serveur sur tous les screens
+        poupee.style.transform = value
      })
+
+     socket.on('hide', () => {
+         startGame.style.visibility = 'hidden'
+     })
+    
+
+
+
+  
+
+
+
+
+
 
 
 })

@@ -1,6 +1,7 @@
 extends template.pug 
 block content 
-    p.startGame  Commencer la partie commence ...
+    div#cache
+        p#startGame  Commencer la partie ...
     #gameArea
     img#poupee(src='/img/poupee.jpg' alt='poupee mortelle') 
     script(src='/socket.io/socket.io.min.js')
