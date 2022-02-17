@@ -11,7 +11,8 @@ const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 
 const app = express();
-
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 const url =
   "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/jeumulti?retryWrites=true&w=majority";
@@ -159,7 +160,12 @@ app.post("/login", (req, res) => {
   MongoClient.connect(url, function (err, client) {
     const db = client.db(dbName);
     const collection = db.collection(coll);
-    
+    // const query = {
+    //     Gamertag: gamertag,
+    //     Email: email,
+    //     Numero: numero,
+    //     Password: password
+    // }
 
     collection.findOne({ email: email }).then((joueur) => {
       console.log("joueur trouvé ", joueur);
@@ -185,8 +191,8 @@ app.post("/login", (req, res) => {
             };
             const joueurAlias = jwt.verify(token, "WhatADamnSecret");
             console.log("joueurAlias du verifToken :", joueurAlias);
-            const nomAfficher = Object.values(joueurAlias);
-            console.log("nomAfficher :", nomAfficher[0]);
+            const nomAfficher= Object.values(joueurAlias)
+            console.log('nomAfficher :', nomAfficher[0])
 
             res.render("jeu", {
               message: `Que la partie commence ${nomAfficher[0]}  !`,
@@ -220,8 +226,7 @@ ioServer.on("connection", (socket) => {
     id: uuid.v4(),
     width: "100px",
     height: "100px",
-    // top: 255 + Math.random() * 700 + "px",
-    top: "700px",
+    top: 255 + Math.random() * 700 + "px",
     left: "30px",
     position: "absolute",
     backgroundColor: randomColor(),
@@ -229,33 +234,72 @@ ioServer.on("connection", (socket) => {
 
   allPlayers[onePlayer.id] = onePlayer;
 
- 
+  // Créer mon carré
+  // envoyer des données à cette connexion websocket uniquement
+  // socket.emit('identifiant', 'données');
+  // envoyer des données à toutes les connexions websocket sauf la mienne
+  // socket.broadcast.emit('identifiant', 'données');
+  // Ici on envoi des données à travers tous les sockets à tous les front-end
   ioServer.emit("updateOrCreatePlayer", onePlayer);
 
- 
+  // Créer tous les carrés de tous les autres joueurs
   for (playerId in allPlayers) {
     const player = allPlayers[playerId];
-   
+    // permet d'envoyer des données à tous les front-end
     ioServer.emit("updateOrCreatePlayer", player);
   }
 
-  // 
+//   socket.on("mousemove", (position) => {
+//     onePlayer.top =
+//       parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
 
-  socket.on("deplacement", (mouvement) => {
-    if (mouvement.haut) {
-      onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
-    }
-    if (mouvement.droite) {
-      onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
-    }
-    if (mouvement.bas) {
-      onePlayer.top = parseFloat(onePlayer.top) + 2 + "px";
-    }
-    if (mouvement.gauche) {
-      onePlayer.left = parseFloat(onePlayer.left) - 2 + "px";
-    }
+//     if (
+//       parseFloat(position.x) <=
+//       parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+//     ) {
+//       onePlayer.left =
+//         parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+//       console.log("joueur :", onePlayer.id);
+//     }
 
-    if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
+//     if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
+//       return;
+//     if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
+//       return;
+
+//     if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
+//       onePlayer.left = 0 + "px";
+//     }
+
+//     for (playerId in allPlayers) {
+//       const player = allPlayers[playerId];
+
+//       if (parseFloat(player.left) > 1200) {
+//         console.log(onePlayer.id, " à dépassé la poupée ");
+//         partieEnCours = false;
+//         showStart();
+//       }
+//     }
+//     // permet d'envoyer des données à tous les front-end
+//     ioServer.emit("updateOrCreatePlayer", onePlayer);
+//   });
+
+
+  socket.on('deplacement', (mouvement) => {
+      if(mouvement.haut) {
+          onePlayer.top = parseFloat(onePlayer.top) - 2 + 'px'
+      }
+      if(mouvement.droite) {
+          onePlayer.left = parseFloat(onePlayer.left) + 2 + 'px'
+      }
+      if(mouvement.bas) {
+          onePlayer.top = parseFloat(onePlayer.top) + 2 + 'px'
+      }
+      if(mouvement.gauche) {
+          onePlayer.left = parseFloat(onePlayer.left) - 2 + 'px'
+      }
+
+      if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
       return;
     if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
       return;
@@ -273,8 +317,18 @@ ioServer.on("connection", (socket) => {
         showStart();
       }
     }
-    ioServer.emit("updateOrCreatePlayer", onePlayer);
-  });
+      ioServer.emit("updateOrCreatePlayer", onePlayer);
+
+  })
+
+
+
+
+
+
+
+
+
 
   socket.on("disconnect", () => {
     delete allPlayers[onePlayer.id];
@@ -296,9 +350,7 @@ ioServer.on("connection", (socket) => {
           sensPoupee = false;
           ioServer.emit("begin", value);
         }, 3000);
-      } else {
-        return;
-      }
+      } else{return}
     }
     function redresse() {
       if (partieEnCours) {
@@ -308,9 +360,7 @@ ioServer.on("connection", (socket) => {
           sensPoupee = true;
           ioServer.emit("begin", value);
         }, Math.random() * 3500 + 1000);
-      } else {
-        return;
-      }
+      } else{return}
     }
 
     function hideStart() {
@@ -320,12 +370,14 @@ ioServer.on("connection", (socket) => {
     hideStart();
 
     function rebase() {
-      for (playerId in allPlayers) {
-        onePlayer.left = "0px";
-      }
-      ioServer.emit("updateOrCreatePlayer", onePlayer);
+        for (playerId in allPlayers){
+            onePlayer.left = '0px'
+        }
+        ioServer.emit("updateOrCreatePlayer", onePlayer);
     }
-    rebase();
+    rebase()
+
+
   });
 
   function showStart() {
@@ -333,8 +385,10 @@ ioServer.on("connection", (socket) => {
     ioServer.emit("hide", "visible");
   }
 
-  ////// test  message serveur//////////////
+  ////// message serveur//////////////
   const messageDuServeur = "do something";
 
   ioServer.emit("message", messageDuServeur);
 });
+
+

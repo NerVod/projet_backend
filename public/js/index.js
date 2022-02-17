@@ -7,7 +7,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
         if (!divElement) {
             divElement = window.document.createElement('div');
             divElement.id = player.id;
-            window.document.getElementById('gameArea').appendChild(divElement);
+            window.document.body.appendChild(divElement);
             // window.document.body.appendChild(divElement);
         }
         divElement.style.top = player.top;
@@ -42,8 +42,15 @@ window.document.addEventListener('DOMContentLoaded', () => {
         socket.emit('mousemove', position)
     })
 
+
+  
+
+
+  
+
+
     
-     const startGame = document.getElementById('cache')
+     const startGame = document.getElementById('startGame')
      const poupee = document.getElementById('poupee');
 
      startGame.addEventListener('click', () => {      
@@ -56,12 +63,46 @@ window.document.addEventListener('DOMContentLoaded', () => {
         poupee.style.transform = value
      })
 
-     socket.on('hide', () => {
-         startGame.style.visibility = 'hidden'
+     socket.on('hide', (boutonValue) => {
+         startGame.style.visibility = boutonValue
      })
     
 
 
+     socket.on('message', (messageSuServeur) =>{
+        console.log(messageSuServeur)
+     })
+
+
+     window.addEventListener('keydown', (e) => {
+         const mouvement={
+             haut: false,
+             droite: false,
+             bas: false,
+             gauche: false,
+         }
+
+        if(e.target !== document.body) return null
+        e.preventDefault()
+        if('ArrowUp'){
+            mouvement.droite = true;
+            socket.emit('deplacement',  mouvement)
+        }
+        if('ArrowRight'){
+            mouvement.droite = true;
+            socket.emit('deplacement',  mouvement)
+        }
+        if('ArrowDown'){
+            mouvement.droite = true;
+            socket.emit('deplacement',  mouvement)
+        }
+        if('ArrowLeft'){
+            mouvement.droite = true;
+            socket.emit('deplacement',  mouvement)
+        }
+
+
+     })
 
   
 
