@@ -7,8 +7,8 @@ window.document.addEventListener('DOMContentLoaded', () => {
         if (!divElement) {
             divElement = window.document.createElement('div');
             divElement.id = player.id;
+            // window.document.getElementById('gameArea').appendChild(divElement);
             window.document.body.appendChild(divElement);
-            // window.document.body.appendChild(divElement);
         }
         divElement.style.top = player.top;
         divElement.style.left = player.left;

@@ -209,19 +209,20 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const uuid = require("uuid");
 const randomColor = require("randomcolor");
-const res = require("express/lib/response");
-const { name } = require("pug/lib");
+// const res = require("express/lib/response");
+// const { name } = require("pug/lib");
 // const req = require('express/lib/request');
 
 const allPlayers = {};
+
 
 ioServer.on("connection", (socket) => {
   const onePlayer = {
     id: uuid.v4(),
     width: "100px",
     height: "100px",
-    // top: 255 + Math.random() * 700 + "px",
-    top: "700px",
+    top: 255 + Math.random() * 700 + "px",
+    // top: "700px",
     left: "30px",
     position: "absolute",
     backgroundColor: randomColor(),
@@ -230,11 +231,12 @@ ioServer.on("connection", (socket) => {
   allPlayers[onePlayer.id] = onePlayer;
 
  
-  ioServer.emit("updateOrCreatePlayer", onePlayer);
+  // ioServer.emit("updateOrCreatePlayer", onePlayer);
 
  
   for (playerId in allPlayers) {
     const player = allPlayers[playerId];
+    allPlayers[onePlayer.id] = onePlayer;
    
     ioServer.emit("updateOrCreatePlayer", player);
   }
@@ -321,7 +323,7 @@ ioServer.on("connection", (socket) => {
 
     function rebase() {
       for (playerId in allPlayers) {
-        onePlayer.left = "0px";
+        onePlayer.left = "30px";
       }
       ioServer.emit("updateOrCreatePlayer", onePlayer);
     }
