@@ -4,9 +4,14 @@ block content
     #erreurlogMessage
         p=message
     form(action='/login' method='POST')
-        label(for='emaillog') E-mail
-        input#emaillog(type='email' name='emaillog' required)
+        label(for='email') E-mail
+        input#email(type='email' name='email' required)
         label(for='password') Mot de passe : 
         input#password(type='password' name='password' required)
         button(type='submit') Ob&eacute;ir
+        //- label(for='emaillog') E-mail
+        //- input#emaillog(type='email' name='emaillog' required)
+        //- label(for='password') Mot de passe : 
+        //- input#password(type='password' name='password' required)
+        //- button(type='submit') Ob&eacute;ir
     #centre

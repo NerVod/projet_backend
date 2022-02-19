@@ -5,16 +5,21 @@ const jwt = require("jsonwebtoken");
 const { MongoClient } = require("mongodb");
 const MongoStore = require("connect-mongo")(session);
 const mongoose = require("mongoose");
-
+const cors = require('cors');
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
+const cookieParser = require('cookie-parser')
+require('dotenv').config()
 
 const app = express();
 
 
-const url =
-  "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/jeumulti?retryWrites=true&w=majority";
+
+
+// const url =
+//   "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/jeumulti?retryWrites=true&w=majority";
+const url = process.env.DB
 const dbName = "jeumulti";
 const coll = "players";
 const collsession = "sessions";
@@ -25,9 +30,11 @@ const dbOptions = {
 const connection = mongoose.createConnection(url, dbOptions);
 
 const config = {
-  port: process.env.port || 8080,
+  port: process.env.PORT || 8080,
   host: process.env.HOST || "127.0.0.1",
 };
+
+
 
 // app.use('/html', express.static(path.join(__dirname, "public","html")))
 app.use("/css", express.static(path.join(__dirname, "public/css")));
@@ -37,17 +44,9 @@ app.use("/.ttf", express.static(path.join(__dirname, "public/font")));
 app.use("/", express.static(path.join(__dirname, "views")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
-// passport.use(new LocalStrategy (
-//     function(username, password, done) {
-//         User.findOne({gamertag: gamertag}, function(err, user) {
-//             if(err) { return done(err); }
-//             if(!user) { return done(null, flase); }
-//             if(!user.verifyPassword(password)) { return done(null, false);}
-//             return done(null, user);
-//         });
-//     }
-// ));
+
 
 app.set("view engine", "pug");
 
@@ -57,7 +56,7 @@ const sessionStore = new MongoStore({
 });
 app.use(
   session({
-    secret: "ThisIsHellOf@TastyBurger",
+    secret: process.env.SECRET_SESSION,
     resave: false,
     saveUninitialized: true,
     store: sessionStore,
@@ -68,26 +67,84 @@ app.use(
 );
 
 app.get("/accueil", (req, res) => {
-  console.log("req.session : ", req.session);
-  console.log("Inside the homepage callback function");
-  console.log('req. body route "/" :', req.body);
+  // console.log("req.session : ", req.session);
+  // console.log("Inside the homepage callback function");
+  // console.log('req. body route "/" :', req.body);
   res.render("accueil.pug");
 });
 
 app.get("/register", (req, res) => {
-  console.log("Inside the GET register callback function");
-  console.log("req. body route /register :", req.body);
+  // console.log("Inside the GET register callback function");
+  // console.log("req. body route /register :", req.body);
   res.render("register.pug");
 });
 
-app.get("/jeu", (req, res) => {
-  jwt.verify(token, "WhatADamnSecret");
-  console.log("route /jeu verifToken :", joueurAlias);
-});
+// app.get("/jeu", verifyToken, (req, res) => {
+  
+//   res.render('accueil', {
+//     message: `Veuillez vous identifier !`,
+//  });
+//   console.log("route /jeu après verifToken ");
+
+// });
+// app.get("/jeu", verifyToken, (req, res) => {
+//   jwt.verify(req.token, process.env.JWTPRIVATEKEY, (err, auth) => {
+//     if(err)
+//  {
+//   res.render('accueil', {
+//     message: `Veuillez vous identifier !`,
+//  }); 
+//   } else {
+//     res.render("jeu", {
+//           message: `Que la partie commence }  !`,
+//     });
+//   } 
+
+
+
+//  });
+//   console.log("route /jeu verifToken :", joueurAlias);
+
+// });
 
 app.get("*", (req, res) => {
   res.render("404.pug");
 });
+
+
+
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+
+  if (token == null) return res.sendStatus(401)
+
+  jwt.verify(token, process.env.JWTPRIVATEKEY, (err, user) => {
+    if (err) {
+      return res.sendStatus(401)
+    }
+    req.user = user;
+    next();
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ////////////////////////////////// création du compte utilisateur //////////////////////////////////
 app.post("/register", (req, res) => {
@@ -99,7 +156,7 @@ app.post("/register", (req, res) => {
   // const password = encrypt(`${req.body.password}`)
 
   const password = bcrypt.hashSync(`${req.body.password}`, salt);
-  console.log("bcrypt création :", password);
+  // console.log("bcrypt création :", password);
 
   MongoClient.connect(url, function (err, client) {
     const db = client.db(dbName);
@@ -108,12 +165,12 @@ app.post("/register", (req, res) => {
     collection.findOne({ email: email }, (err, joueur) => {
       console.log("step 1");
       if (err) {
-        console.log("erreur connexion mongo : ", err);
+        // console.log("erreur connexion mongo : ", err);
         client.close();
       } else {
         if (!joueur) {
-          console.log("step 2");
-          const token = jwt.sign({ gamertag }, "WhatADamnSecret");
+          // console.log("step 2");
+          const token = jwt.sign({ gamertag }, process.env.JWTPRIVATEKEY);
 
           collection.insertOne(
             {
@@ -124,17 +181,17 @@ app.post("/register", (req, res) => {
               token: token,
             },
             (err, joueur) => {
-              console.log("step 3");
-              console.log(joueur);
+              // console.log("step 3");
+              // console.log(joueur);
               client.close();
             }
           );
-          console.log("compte créé en BDD ");
+          // console.log("compte créé en BDD ");
           res.render("accueil", {
             message: "Connectez-vous à votre compte recrue !",
           });
         } else {
-          console.log("Un compte existe déjà sur cet email ");
+          // console.log("Un compte existe déjà sur cet email ");
           res.render("register", {
             message: "Un compte existe déjà sur cet email !",
           });
@@ -148,25 +205,26 @@ app.post("/register", (req, res) => {
 
 ////////////////////////////////////// Connexion au compte utilisateur //////////////////////////////////////
 
-app.post("/login", (req, res) => {
-  console.log("route /login invoquée");
-  console.log("corps de la requête :", req.body);
+app.post("/login", (req, res, next) => {
+  // console.log("route /login invoquée");
+  // console.log("corps de la requête :", req.body);
   // const gamertag = req.body.gamertag;
   const email = req.body.emaillog;
   // const numero = req.body.numero;
   const password = req.body.password;
 
+ 
   MongoClient.connect(url, function (err, client) {
     const db = client.db(dbName);
     const collection = db.collection(coll);
     
 
     collection.findOne({ email: email }).then((joueur) => {
-      console.log("joueur trouvé ", joueur);
+      // console.log("joueur trouvé ", joueur);
       if (joueur) {
         bcrypt.compare(password, joueur.password).then((isValid) => {
           if (!isValid) {
-            console.log("Erreur d'identification ");
+            // console.log("Erreur d'identification ");
             res.render("accueil", {
               message: "Erreur d'identification, vérifiez votre saisie !",
             });
@@ -174,29 +232,51 @@ app.post("/login", (req, res) => {
           } else {
             const leJoueur = Object.values(joueur);
             console.log("comparaison mdp réussie", leJoueur[1]);
-            const token = jwt.sign(
+            // const token = jwt.sign(
+            //   { name: `${leJoueur[1]}` },
+            //   process.env.JWTPRIVATEKEY
+            // );
+            jwt.sign(
               { name: `${leJoueur[1]}` },
-              "WhatADamnSecret"
-            );
-            console.log("token au login :", token);
-            req.session[req.sessionID] = {
-              alias: `${leJoueur[1]}`,
-              token: token,
-            };
-            const joueurAlias = jwt.verify(token, "WhatADamnSecret");
-            console.log("joueurAlias du verifToken :", joueurAlias);
-            const nomAfficher = Object.values(joueurAlias);
-            console.log("nomAfficher :", nomAfficher[0]);
-
-            res.render("jeu", {
-              message: `Que la partie commence ${nomAfficher[0]}  !`,
-            });
+              process.env.JWTPRIVATEKEY, (err, token) => {
+                res.setHeader('Authorization', 'Bearer ' + token);
+                console.log('token au login sur route login : ', token)
+                 res.render('jeu', {
+                    message: `Que la partie commence  !`,
+                 });
+                next()
+              }
+              );
+              
+              // res.json(token)
+              // console.log("token au login :", token);
+              // req.session[req.sessionID] = {
+                //   alias: `${leJoueur[1]}`,
+                //   token: token,
+                // };
+                // const joueurAlias = jwt.verify(token, "WhatADamnSecret");
+                // console.log("joueurAlias du verifToken :", joueurAlias);
+                // const nomAfficher = Object.values(joueurAlias);
+                // console.log("nomAfficher :", nomAfficher[0]);
+                
+                // res.render("/accueil", {
+                //   message: `Que la partie commence ${nomAfficher[0]}  !`,
+                // });
+                // next()
           }
         });
+        // res.render("jeu", {
+        //     message: `Que la partie commence }  !`,
+      // });
       }
     });
   });
 });
+
+
+
+
+
 
 const httpServer = app.listen(config.port, () => {
   console.log(`le serveur écoute le port ${config.port}`);
@@ -209,6 +289,23 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const uuid = require("uuid");
 const randomColor = require("randomcolor");
+
+// io.use(cookieParser());
+// io.use(authorization);
+
+ioServer.use( async (socket, next) => {
+  try {
+    const token = socket.handshake.query.token;
+    const payload = await jwt.verify(token, process.env.JWTPRIVATEKEY);
+    socket.user_id = payload.user_id;
+    next();
+  } catch (err) {
+    next(err)
+  }
+})
+
+
+
 // const res = require("express/lib/response");
 // const { name } = require("pug/lib");
 // const req = require('express/lib/request');
@@ -217,6 +314,9 @@ const allPlayers = {};
 
 
 ioServer.on("connection", (socket) => {
+ 
+  console.log('io connecté :'+ socket.user_id)
+
   const onePlayer = {
     id: uuid.v4(),
     width: "100px",
@@ -236,7 +336,6 @@ ioServer.on("connection", (socket) => {
  
   for (playerId in allPlayers) {
     const player = allPlayers[playerId];
-    allPlayers[onePlayer.id] = onePlayer;
    
     ioServer.emit("updateOrCreatePlayer", player);
   }
