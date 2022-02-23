@@ -41,7 +41,7 @@ h2 {
 }
 
 #centre {
-  height: 60vh;
+  height: 40vh;
   width: 100vw;
   background-image: url("/img/poupee-mortelle.jpg");
   background-repeat: no-repeat;
@@ -65,6 +65,12 @@ h2 {
   display: block;
   margin: auto;
   margin-top: 6em;
+}
+
+.accueil {
+  display: block;
+  margin: auto;
+  margin-top: 8em;
 }
 
 .bienVoir {
@@ -130,3 +136,6 @@ h2 {
   border: 1px solid black;
 }
 
+#messagecache{
+  color: red
+}

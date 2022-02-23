@@ -7,6 +7,7 @@ const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const Cookies = require('cookies');
 require("dotenv").config();
 
 const app = express();
@@ -34,18 +35,13 @@ app.get("/register", (req, res) => {
   res.render("register.pug");
 });
 
-// app.get('/jeu', (req, res) => {
-//     fetchPlayerByToken(req)
-//     .then((player) => {
-//         res.render('jeu.pug')
-//     })
-//     .catch((err) => {
-//         console.log('erreur de token sur route jeu')
-//     })
-// })
+
 
 app.get("/jeu", (req, res) => {
-  let cookie = req.cookies;
+  let cookie = req.headers.cookie;
+  console.log('cookie :', cookie)
+  
+
   console.log("detection du cookie :", cookie);
   if (cookie) {
     res.render("jeu.pug");
@@ -55,6 +51,7 @@ app.get("/jeu", (req, res) => {
     });
   }
 });
+
 
 app.get("*", (req, res) => {
   res.render("404.pug");
@@ -122,21 +119,26 @@ app.post("/login", (req, res) => {
             message: "Erreur d'identifiants, Veuillez vous enregistrer !",
           });
         } else {
-          const token = jwt.sign(
-            { id: user._id, email: user.email },
+          let leJoueur = Object.values(user);
+          let gamertag = leJoueur[2].gamertag;
+          let victories = leJoueur[2].victories
+          let token = jwt.sign(
+            { id: user._id, email: user.email, gamertag: `${gamertag}` },
             process.env.JWTPRIVATEKEY
           );
-          // console.log("token à la connexion : ", token);
-          // res.json({ token: token})
-          const leJoueur = Object.values(user);
-          let gamertag = leJoueur[2].gamertag;
+          
+          
           console.log(gamertag)
           ;
-          // res.cookie( 'gamertag', `${gamertag}`, {maxAge:900000, httpOnly: false})
-          res.writeHead(200, {
-            "Set-Cookie": `${gamertag}`,
-            "Access-Control-Allow-Credentials": true,
-          });
+          console.log('token après login dans route post:',token)
+  
+        
+        new Cookies(req,res).set('access_token', token, { httpOnly: false, MaxAge: 1000*60*60})
+        res.render("accueil.pug", {
+          message: "Vous pouvez vous rendre à la zone de jeu !",
+        });
+            
+         
         }
       }
     })
@@ -150,30 +152,9 @@ app.post("/login", (req, res) => {
     });
 });
 
-function fetchPlayerByToken(req) {
-  return new Promise((resolve, reject) => {
-    if (req.headers && req.headers.authorization) {
-      let authorization = req.headers.authorization;
-      let decoded;
-      try {
-        decoded = jwt.verify(authorization, JWTPRIVATEKEY);
-      } catch (error) {
-        reject("token invalide");
-        return;
-      }
-      let userId = decoded.id;
-      Database.User.findOne({ _id: userId })
-        .then((user) => {
-          resolve(user);
-        })
-        .catch((error) => {
-          reject("Erreur de Token");
-        });
-    } else {
-      reject("Token manquant");
-    }
-  });
-}
+
+
+
 
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
@@ -184,32 +165,41 @@ const httpServer = app.listen(config.port, () => {
 const io = require("socket.io");
 const Server = io.Server;
 const ioServer = new Server(httpServer);
-const uuid = require("uuid");
 const randomColor = require("randomcolor");
+const { setInterval } = require("timers");
+
 
 const allPlayers = {};
 
 ioServer.on("connection", (socket) => {
 
   console.log("io connecté avec cookie:" + socket.request.headers.cookie);
-  let joueurUnique = socket.request.headers.cookie
+  
+  let uniquePlayer = socket.request.headers.cookie
+  let parsedToken = uniquePlayer.substring(13)
+  console.log('parsedToken', parsedToken)
+  let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY)
+  console.log(dataJoueur['id'])
+  console.log(dataJoueur['gamertag'])
   
   
    ///////////////////////  création du joueur à la connexion //////////////////////
   const onePlayer = {
-    id: uuid.v4(),
+    id: dataJoueur['id'],
+    gamertag: dataJoueur['gamertag'],
     width: "100px",
     height: "100px",
-    top: 255 + Math.random() * 700 + "px",
-    // top: "700px",
+    top: 255 + Math.random() * 500 + "px",
     left: "30px",
     position: "absolute",
     backgroundColor: randomColor(),
   };
 
 
+
   ////////////// iD unique pour chaque connexion et envoi à tous les sockets
   allPlayers[onePlayer.id] = onePlayer;
+  allPlayers[onePlayer.gamertag] = onePlayer;
 
   ioServer.emit("updateOrCreatePlayer", onePlayer);
 
@@ -226,6 +216,7 @@ ioServer.on("connection", (socket) => {
       onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
     }
     if (mouvement.droite) {
+      console.log('flèche droite', onePlayer.gamertag)
       onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
     }
     if (mouvement.bas) {
@@ -244,8 +235,6 @@ ioServer.on("connection", (socket) => {
       onePlayer.left = 0 + "px";
     }
 
-
-
     ///////////////// détection de l'arrivée d'un joueur derrière la poupée //////////////
     for (playerId in allPlayers) {
       const player = allPlayers[playerId];
@@ -254,10 +243,52 @@ ioServer.on("connection", (socket) => {
         console.log(onePlayer.id, " à dépassé la poupée ");
         partieEnCours = false;
         showStart();
+        addOneVictory()
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
   });
+
+
+
+  ////////////// déplacement à la souris///////////////////////
+
+  socket.on("mousemove", (position) => {
+    onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
+
+    if (
+      parseFloat(position.x) <= parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+    ) {
+      onePlayer.left = parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+      console.log("joueur :", onePlayer.id);
+    }
+
+    if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
+      return;
+    if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
+      return;
+
+    if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
+      onePlayer.left = 0 + "px";
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    /////////////// Condition de Victoire : dépassement poupée
+    
+    for (playerId in allPlayers) {
+      const player = allPlayers[playerId];
+      if (parseFloat(player.left) > 1100) {
+        console.log(onePlayer.id, " à dépassé la poupée ");
+        partieEnCours = false;
+        showStart();
+        // stopToggle(toggleEnnemi);
+        addOneVictory();
+        
+        
+      }
+    }
+    ioServer.emit("updateOrCreatePlayer", onePlayer);
+    });
 
 
   ////////////// supression jes joueurs à la déconnexion du socket////////////////
@@ -267,68 +298,107 @@ ioServer.on("connection", (socket) => {
   });
 
 
+
+/////////////////////////////////////////////////////////////////////////////////////
   ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
   let sensPoupee = true;
   let partieEnCours = false;
+  let valeur = 1
+  let value = `scaleX(${valeur})`
 
-  socket.on("start", () => {
-    partieEnCours = true;
-    reverse();
-    function reverse() {
-      if (partieEnCours) {
-        setTimeout(() => {
-          const value = "scaleX(-1)";
-          redresse();
-          sensPoupee = false;
-          ioServer.emit("begin", value);
-        }, 3000);
+  let retournerPoupee = function () {
+    if(partieEnCours){
+      valeur = -valeur
+      if(valeur === 1) {
+        value = 'scaleX(1)';
+        sensPoupee = true;
+        ioServer.emit('begin', value)
       } else {
-        return;
+        value = 'scaleX(-1)'
+        sensPoupee = false;
+        ioServer.emit('begin', value)
       }
-    }
-    function redresse() {
-      if (partieEnCours) {
-        setTimeout(() => {
-          const value = "scaleX(1)";
-          reverse();
-          sensPoupee = true;
-          ioServer.emit("begin", value);
-        }, Math.random() * 3500 + 1000);
-      } else {
-        return;
-      }
-    }
+      console.log('valeur du scalex :',valeur)
+  }}
 
-    ////////////  masquer le bouton de partie après début => évite cumul des timeout
-    function hideStart() {
-      const boutonValue = "hidden";
+
+
+function stopToggle() {
+  clearInterval(toggleEnnemi)
+}
+  
+let boutonValue = 'visible'
+
+  function hideStart() {
+    for (playerId in allPlayers){
+       boutonValue = "hidden";
       ioServer.emit("hide", boutonValue);
+      return boutonValue
     }
-    hideStart();
+  }
 
-
-    //////////// repositionnement des joueurs au début du parcours
-    function rebase() {
-      for (playerId in allPlayers) {
-        onePlayer.left = "30px";
-      }
-      ioServer.emit("updateOrCreatePlayer", onePlayer);
+  
+  /////// réapparition bouton start quand un joueur attend l'arrivée ///////////
+  function showStart() { 
+    for (playerId in allPlayers){
+      boutonValue = "visible";
+      ioServer.emit("hide", "visible");
+      return boutonValue
     }
-    rebase();
-  });
-
-    /////// réapparition bouton start quand un joueur attend l'arrivée ///////////
-  function showStart() {
-    const boutonValue = "visible";
-    ioServer.emit("hide", "visible");
   }
 
 
+
+
+
+  function rebase() {
+    for (playerId in allPlayers) {
+      onePlayer.left = "30px";
+    }
+    ioServer.emit("updateOrCreatePlayer", onePlayer);
+  }
   ////// fonction gangnant//////////////
 
-  // inscription en BDD à implémenter
+  const addOneVictory = function (winner){
+    let victories = dataJoueur['victories']
+    Database.User.findOneAndUpdate({gamertag: dataJoueur['gamertag']}, {victories: victories++}, console.log('victoire ajoutée'))
+  }  
   
-  
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   ////////////////////////////////////////////////////////////////////////////////////////////
+   ////////////  Démarrage partie
+
+  let toggleEnnemi;
+  socket.on("start", () => {
+    partieEnCours = true;
+    toggleEnnemi = setInterval(function() {
+      retournerPoupee()
+      if(!partieEnCours){
+        clearInterval(toggleEnnemi);
+        console.log('clear interval')
+        toggleEnnemi=null;
+        console.log('valeur toggleennemi', toggleEnnemi)
+      }
+      }, Math.random()*3500+4000)
+    ////////////  masquer le bouton de partie après début => évite cumul des timeout
+    hideStart();
+    //////////// repositionnement des joueurs au début du parcours
+    rebase();
+    for (playerId in allPlayers) {
+      const player = allPlayers[playerId];
+      if (parseFloat(player.left) > 1100) {
+        console.log(onePlayer.id, " à dépassé la poupée ");
+        partieEnCours = false;
+        clearInterval(toggleEnnemi); 
+      }
+    }
+
+  });
+
+
+
+
+   
   
   
   
@@ -336,4 +406,5 @@ ioServer.on("connection", (socket) => {
   const messageDuServeur = "do something";
 
   ioServer.emit("message", messageDuServeur);
-});
+
+  });

@@ -10,6 +10,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
             // window.document.getElementById('gameArea').appendChild(divElement);
             window.document.body.appendChild(divElement);
         }
+        divElement.innerHTML = player.gamertag;
         divElement.style.top = player.top;
         divElement.style.left = player.left;
         divElement.style.width = player.width;
@@ -17,9 +18,9 @@ window.document.addEventListener('DOMContentLoaded', () => {
         divElement.style.position = player.position;
         divElement.style.backgroundColor = player.backgroundColor;
         return divElement;
-
     }
    
+    
 
     const socket = io('http://localhost:8080');
 
@@ -41,15 +42,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
         };
         socket.emit('mousemove', position)
     })
-
-
-  
-
-
-  
-
-
-    
+   ////////////////////////////////////
      const startGame = document.getElementById('startGame')
      const poupee = document.getElementById('poupee');
 
@@ -63,16 +56,17 @@ window.document.addEventListener('DOMContentLoaded', () => {
         poupee.style.transform = value
      })
 
+
+
      socket.on('hide', (boutonValue) => {
          startGame.style.visibility = boutonValue
      })
     
-
+   
 
      socket.on('message', (messageSuServeur) =>{
         console.log(messageSuServeur)
      })
-
 
      window.addEventListener('keydown', (e) => {
          const mouvement={

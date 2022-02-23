@@ -27,13 +27,13 @@ app.use(cookieParser());
 
 app.set("view-engine", "pug");
 
-app.get("/accueil", (req, res) => {
-  res.render("accueil.pug");
-});
 app.get("/register", (req, res) => {
   res.render("register.pug");
 });
 
+app.get("/", (req, res) => {
+  res.render("accueil.pug");
+});
 // app.get('/jeu', (req, res) => {
 //     fetchPlayerByToken(req)
 //     .then((player) => {

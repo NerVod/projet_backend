@@ -1,352 +1,232 @@
 const express = require("express");
 const path = require("path");
-const session = require("express-session");
-const jwt = require("jsonwebtoken");
-const { MongoClient } = require("mongodb");
-const MongoStore = require("connect-mongo")(session);
-const mongoose = require("mongoose");
-const cors = require('cors');
+const cors = require("cors");
+const Database = require("./public/js/db");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
-const cookieParser = require('cookie-parser')
-require('dotenv').config()
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const Cookies = require('cookies');
+require("dotenv").config();
 
 const app = express();
-
-
-
-
-// const url =
-//   "mongodb+srv://NerVod:MotDePasseMongo@cluster0.aykvr.mongodb.net/jeumulti?retryWrites=true&w=majority";
-const url = process.env.DB
-const dbName = "jeumulti";
-const coll = "players";
-const collsession = "sessions";
-const dbOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-};
-const connection = mongoose.createConnection(url, dbOptions);
 
 const config = {
   port: process.env.PORT || 8080,
   host: process.env.HOST || "127.0.0.1",
 };
 
-
-
-// app.use('/html', express.static(path.join(__dirname, "public","html")))
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
 app.use("/img", express.static(path.join(__dirname, "public/images")));
 app.use("/.ttf", express.static(path.join(__dirname, "public/font")));
-app.use("/", express.static(path.join(__dirname, "views")));
+app.use("/.pug", express.static(path.join(__dirname, "views")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cookieParser());
 
-
-
-app.set("view engine", "pug");
-
-const sessionStore = new MongoStore({
-  mongooseConnection: connection,
-  collection: collsession,
-});
-app.use(
-  session({
-    secret: process.env.SECRET_SESSION,
-    resave: false,
-    saveUninitialized: true,
-    store: sessionStore,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24,
-    },
-  })
-);
+app.set("view-engine", "pug");
 
 app.get("/accueil", (req, res) => {
-  // console.log("req.session : ", req.session);
-  // console.log("Inside the homepage callback function");
-  // console.log('req. body route "/" :', req.body);
   res.render("accueil.pug");
 });
-
 app.get("/register", (req, res) => {
-  // console.log("Inside the GET register callback function");
-  // console.log("req. body route /register :", req.body);
   res.render("register.pug");
 });
 
-// app.get("/jeu", verifyToken, (req, res) => {
+// app.get('/jeu', (req, res) => {
+//     fetchPlayerByToken(req)
+//     .then((player) => {
+//         res.render('jeu.pug', {
+//           message: player
+//         })
+//     })
+//     .catch((err) => {
+//         console.log('erreur de token sur route jeu')
+//     })
+// })
+
+app.get("/jeu", (req, res) => {
+  let cookie = req.headers.cookie;
+  console.log('cookie :', cookie)
   
-//   res.render('accueil', {
-//     message: `Veuillez vous identifier !`,
-//  });
-//   console.log("route /jeu après verifToken ");
 
-// });
-// app.get("/jeu", verifyToken, (req, res) => {
-//   jwt.verify(req.token, process.env.JWTPRIVATEKEY, (err, auth) => {
-//     if(err)
-//  {
-//   res.render('accueil', {
-//     message: `Veuillez vous identifier !`,
-//  }); 
-//   } else {
-//     res.render("jeu", {
-//           message: `Que la partie commence }  !`,
-//     });
-//   } 
+  console.log("detection du cookie :", cookie);
+  if (cookie) {
+    res.render("jeu.pug");
+  } else {
+    res.render("accueil.pug", {
+      message: "Erreur d'identifiants route /jeu, Veuillez vous enregistrer !",
+    });
+  }
+});
 
-
-
-//  });
-//   console.log("route /jeu verifToken :", joueurAlias);
-
-// });
 
 app.get("*", (req, res) => {
   res.render("404.pug");
 });
 
-
-
-
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1]
-
-  if (token == null) return res.sendStatus(401)
-
-  jwt.verify(token, process.env.JWTPRIVATEKEY, (err, user) => {
-    if (err) {
-      return res.sendStatus(401)
-    }
-    req.user = user;
-    next();
-  });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-////////////////////////////////// création du compte utilisateur //////////////////////////////////
+///////////////////////////////// création du compte utilisateur
 app.post("/register", (req, res) => {
-  console.log("route /register invoquée");
-  console.log("corps de la requête :", req.body);
-  const gamertag = req.body.gamertag;
-  const email = req.body.email;
-  const numero = req.body.numero;
-  // const password = encrypt(`${req.body.password}`)
+  if (!req.body.email || !req.body.password) {
+    // res.json({ success: false, error: 'Veuillez vous identifier'})
+    res.render("register.pug", {
+      message: "Veuillez vous identifier !",
+    });
+    return;
+  }
 
-  const password = bcrypt.hashSync(`${req.body.password}`, salt);
-  // console.log("bcrypt création :", password);
+  Database.User.create({
+    email: req.body.email,
+    gamertag: req.body.gamertag,
+    password: bcrypt.hashSync(req.body.password, salt),
+  })
+    .then((user) => {
+      console.log("compte créé dans BDD");
+      const token = jwt.sign(
+        { id: user._id, email: user.email, gamertag: user.gamertag },
+        process.env.JWTPRIVATEKEY
+      );
+      console.log("token créé à la création du compte :", token);
+      // res.json({ success: true, token: token })
+      res.setHeader("Authorization", "Bearer " + token);
+      res.render("accueil.pug", {
+        message: "Vous pouvez commencer la partie !",
+      });
+    })
+    .catch((err) => {
+      // res.json({ success: false, error : err})
+      console.error(err);
+      res.render("register.pug", {
+        message: "Erreur d'identification, veuillez recommencer !",
+      });
+    });
+});
 
-  MongoClient.connect(url, function (err, client) {
-    const db = client.db(dbName);
-    const collection = db.collection(coll);
+///////////////// connexion au compte utilisateur/////////////////////////////////////
 
-    collection.findOne({ email: email }, (err, joueur) => {
-      console.log("step 1");
-      if (err) {
-        // console.log("erreur connexion mongo : ", err);
-        client.close();
+app.post("/login", (req, res) => {
+  if (!req.body.email || !req.body.password) {
+    // res.json({ success: false, error: 'Veuillez vous enregistrer'})
+    res.render("accueil.pug", {
+      message: "Veuillez vous connecter !",
+    });
+    return;
+  }
+
+  Database.User.findOne({ email: req.body.email })
+    .then((user) => {
+      if (!user) {
+        // res.json({ success: false, error: "Pas de compte sur cet email"})
+        res.render("register.pug", {
+          message: "Pas de compte sur cet email, Veuillez vous enregistrer !",
+        });
       } else {
-        if (!joueur) {
-          // console.log("step 2");
-          const token = jwt.sign({ gamertag }, process.env.JWTPRIVATEKEY);
-
-          collection.insertOne(
-            {
-              gamertag: gamertag,
-              email: email,
-              numero: numero,
-              password: password,
-              token: token,
-            },
-            (err, joueur) => {
-              // console.log("step 3");
-              // console.log(joueur);
-              client.close();
-            }
-          );
-          // console.log("compte créé en BDD ");
-          res.render("accueil", {
-            message: "Connectez-vous à votre compte recrue !",
+        if (!bcrypt.compareSync(req.body.password, user.password)) {
+          // res.json({success: false, error: 'Mot de passe incorrect'})
+          res.render("accueil.pug", {
+            message: "Erreur d'identifiants, Veuillez vous enregistrer !",
           });
         } else {
-          // console.log("Un compte existe déjà sur cet email ");
-          res.render("register", {
-            message: "Un compte existe déjà sur cet email !",
-          });
-        }
-
-        console.log("step final");
-      }
-    });
-  });
-});
-
-////////////////////////////////////// Connexion au compte utilisateur //////////////////////////////////////
-
-app.post("/login", (req, res, next) => {
-  // console.log("route /login invoquée");
-  // console.log("corps de la requête :", req.body);
-  // const gamertag = req.body.gamertag;
-  const email = req.body.emaillog;
-  // const numero = req.body.numero;
-  const password = req.body.password;
-
- 
-  MongoClient.connect(url, function (err, client) {
-    const db = client.db(dbName);
-    const collection = db.collection(coll);
-    
-
-    collection.findOne({ email: email }).then((joueur) => {
-      // console.log("joueur trouvé ", joueur);
-      if (joueur) {
-        bcrypt.compare(password, joueur.password).then((isValid) => {
-          if (!isValid) {
-            // console.log("Erreur d'identification ");
-            res.render("accueil", {
-              message: "Erreur d'identification, vérifiez votre saisie !",
-            });
-            client.close();
-          } else {
-            const leJoueur = Object.values(joueur);
-            console.log("comparaison mdp réussie", leJoueur[1]);
-            // const token = jwt.sign(
-            //   { name: `${leJoueur[1]}` },
-            //   process.env.JWTPRIVATEKEY
-            // );
-            jwt.sign(
-              { name: `${leJoueur[1]}` },
-              process.env.JWTPRIVATEKEY, (err, token) => {
-                res.setHeader('Authorization', 'Bearer ' + token);
-                console.log('token au login sur route login : ', token)
-                 res.render('jeu', {
-                    message: `Que la partie commence  !`,
-                 });
-                next()
-              }
-              );
-              
-              // res.json(token)
-              // console.log("token au login :", token);
-              // req.session[req.sessionID] = {
-                //   alias: `${leJoueur[1]}`,
-                //   token: token,
-                // };
-                // const joueurAlias = jwt.verify(token, "WhatADamnSecret");
-                // console.log("joueurAlias du verifToken :", joueurAlias);
-                // const nomAfficher = Object.values(joueurAlias);
-                // console.log("nomAfficher :", nomAfficher[0]);
-                
-                // res.render("/accueil", {
-                //   message: `Que la partie commence ${nomAfficher[0]}  !`,
-                // });
-                // next()
-          }
+          let leJoueur = Object.values(user);
+          let gamertag = leJoueur[2].gamertag;
+          let victories = leJoueur[2].victories
+          let token = jwt.sign(
+            { id: user._id, email: user.email, gamertag: `${gamertag}` },
+            process.env.JWTPRIVATEKEY
+          );
+          
+          
+          console.log(gamertag)
+          ;
+          console.log('token après login dans route post:',token)
+  
+        
+        new Cookies(req,res).set('access_token', token, { httpOnly: false, MaxAge: 1000*60*60})
+        res.render("accueil.pug", {
+          message: "Vous pouvez vous rendre à la zone de jeu !",
         });
-        // res.render("jeu", {
-        //     message: `Que la partie commence }  !`,
-      // });
+            
+         
+        }
       }
+    })
+    .catch((err) => {
+      // res.json({ success: false, error: err})
+      console.error(err);
+      res.render("accueil.pug", {
+        message:
+          "Erreur lors de l'identification, connectez-vous ou créez un compte !",
+      });
     });
-  });
 });
-
 
 
 
 
 
 const httpServer = app.listen(config.port, () => {
-  console.log(`le serveur écoute le port ${config.port}`);
+  console.log(`Le serveur écoute le port ${config.port}`);
 });
 
-/////////////////  serveur websocket /////////////////
+//////////////////////////////////////////  serveur websocket //////////////////////////////////////////
 
 const io = require("socket.io");
 const Server = io.Server;
 const ioServer = new Server(httpServer);
-const uuid = require("uuid");
 const randomColor = require("randomcolor");
-
-// io.use(cookieParser());
-// io.use(authorization);
-
-ioServer.use( async (socket, next) => {
-  try {
-    const token = socket.handshake.query.token;
-    const payload = await jwt.verify(token, process.env.JWTPRIVATEKEY);
-    socket.user_id = payload.user_id;
-    next();
-  } catch (err) {
-    next(err)
-  }
-})
-
-
-
-// const res = require("express/lib/response");
-// const { name } = require("pug/lib");
-// const req = require('express/lib/request');
+const { setInterval } = require("timers");
+const { reverse } = require("dns/promises");
 
 const allPlayers = {};
 
-
 ioServer.on("connection", (socket) => {
- 
-  console.log('io connecté :'+ socket.user_id)
 
+  console.log("io connecté avec cookie:" + socket.request.headers.cookie);
+  
+  let uniquePlayer = socket.request.headers.cookie
+  let parsedToken = uniquePlayer.substring(13)
+  console.log('parsedToken', parsedToken)
+  let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY)
+  console.log(dataJoueur['id'])
+  console.log(dataJoueur['gamertag'])
+  
+  
+   ///////////////////////  création du joueur à la connexion //////////////////////
   const onePlayer = {
-    id: uuid.v4(),
+    id: dataJoueur['id'],
+    gamertag: dataJoueur['gamertag'],
     width: "100px",
     height: "100px",
-    top: 255 + Math.random() * 700 + "px",
-    // top: "700px",
+    top: 255 + Math.random() * 500 + "px",
     left: "30px",
     position: "absolute",
     backgroundColor: randomColor(),
   };
 
+
+
+  ////////////// iD unique pour chaque connexion et envoi à tous les sockets
   allPlayers[onePlayer.id] = onePlayer;
+  allPlayers[onePlayer.gamertag] = onePlayer;
 
- 
-  // ioServer.emit("updateOrCreatePlayer", onePlayer);
+  ioServer.emit("updateOrCreatePlayer", onePlayer);
 
- 
   for (playerId in allPlayers) {
     const player = allPlayers[playerId];
-   
+
     ioServer.emit("updateOrCreatePlayer", player);
   }
 
-  // 
+  /////////////  déplacement du jouer avec les flèches clvier
 
   socket.on("deplacement", (mouvement) => {
     if (mouvement.haut) {
       onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
     }
     if (mouvement.droite) {
+      console.log('flèche droite', onePlayer.gamertag)
       onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
     }
     if (mouvement.bas) {
@@ -365,6 +245,7 @@ ioServer.on("connection", (socket) => {
       onePlayer.left = 0 + "px";
     }
 
+    ///////////////// détection de l'arrivée d'un joueur derrière la poupée //////////////
     for (playerId in allPlayers) {
       const player = allPlayers[playerId];
 
@@ -372,70 +253,145 @@ ioServer.on("connection", (socket) => {
         console.log(onePlayer.id, " à dépassé la poupée ");
         partieEnCours = false;
         showStart();
+        clearInterval(retournerPoupee);
+        addOneVictory()
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
   });
 
+
+
+  ////////////// déplacement à la souris///////////////////////
+
+  socket.on("mousemove", (position) => {
+    onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
+
+    if (
+      parseFloat(position.x) <= parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+    ) {
+      onePlayer.left = parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+      console.log("joueur :", onePlayer.id);
+    }
+
+    if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
+      return;
+    if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
+      return;
+
+    if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
+      onePlayer.left = 0 + "px";
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    /////////////// Condition de Victoire : dépassement poupée
+    let retourne = setInterval(retournerPoupee ,Math.random()*3500+1000);
+    stopRetourne(retourne);
+
+    for (playerId in allPlayers) {
+      const player = allPlayers[playerId];
+
+      if (parseFloat(player.left) > 1100) {
+        console.log(onePlayer.id, " à dépassé la poupée ");
+        partieEnCours = false;
+        showStart();
+        clearInterval(retournerPoupee);
+        addOneVictory();
+      }
+    }
+
+    ioServer.emit("updateOrCreatePlayer", onePlayer);
+    });
+
+
+  ////////////// supression jes joueurs à la déconnexion du socket////////////////
   socket.on("disconnect", () => {
     delete allPlayers[onePlayer.id];
-    // permet d'envoyer des données à tous les front-end
     ioServer.emit("removePlayer", onePlayer);
   });
 
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+  ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
   let sensPoupee = true;
   let partieEnCours = false;
+  let valeur = 1
+  let value = `scaleX(${valeur})`
 
-  socket.on("start", () => {
-    partieEnCours = true;
-    reverse();
-    function reverse() {
-      if (partieEnCours) {
-        setTimeout(() => {
-          const value = "scaleX(-1)";
-          redresse();
-          sensPoupee = false;
-          ioServer.emit("begin", value);
-        }, 3000);
+  const retournerPoupee = function () {
+    if(partieEnCours){
+      valeur = -valeur
+      if(valeur === 1) {
+        const value = 'scaleX(1)';
+        sensPoupee = true;
+        ioServer.emit('begin', value)
       } else {
-        return;
+        const value = 'scaleX(-1)'
+        sensPoupee = false;
+        ioServer.emit('begin', value)
       }
-    }
-    function redresse() {
-      if (partieEnCours) {
-        setTimeout(() => {
-          const value = "scaleX(1)";
-          reverse();
-          sensPoupee = true;
-          ioServer.emit("begin", value);
-        }, Math.random() * 3500 + 1000);
-      } else {
-        return;
-      }
-    }
+      console.log('valeur du scalex :',valeur)
+  }}
 
-    function hideStart() {
+
+  const stopRetourne = function(retourne) {
+    console.log(retourne)
+    clearInterval(retourne)
+    console.log(retourne)
+  }
+
+  function hideStart() {
+    for (playerId in allPlayers){
       const boutonValue = "hidden";
       ioServer.emit("hide", boutonValue);
     }
-    hideStart();
+  }
 
-    function rebase() {
-      for (playerId in allPlayers) {
-        onePlayer.left = "30px";
-      }
-      ioServer.emit("updateOrCreatePlayer", onePlayer);
+  function rebase() {
+    for (playerId in allPlayers) {
+      onePlayer.left = "30px";
     }
+    ioServer.emit("updateOrCreatePlayer", onePlayer);
+  }
+
+   /////// réapparition bouton start quand un joueur attend l'arrivée ///////////
+   function showStart() { 
+    for (playerId in allPlayers){
+      const boutonValue = "visible";
+      ioServer.emit("hide", "visible");
+    }
+  }
+  ////// fonction gangnant//////////////
+
+  const addOneVictory = function (winner){
+    let victories = dataJoueur['victories']
+    Database.User.findOneAndUpdate({gamertag: dataJoueur['gamertag']}, {victories: victories++}, console.log('victoire ajoutée'))
+   }  
+  
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////  Démarrage partie
+  socket.on("start", () => {
+    partieEnCours = true;
+    retourne = setInterval(retournerPoupee ,Math.random()*3500+5000);
+    ////////////  masquer le bouton de partie après début => évite cumul des timeout
+    hideStart();
+    //////////// repositionnement des joueurs au début du parcours
     rebase();
   });
 
-  function showStart() {
-    const boutonValue = "visible";
-    ioServer.emit("hide", "visible");
-  }
 
+
+
+   
+  
+  
+  
   ////// test  message serveur//////////////
   const messageDuServeur = "do something";
 
   ioServer.emit("message", messageDuServeur);
-});
+
+  });

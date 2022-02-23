@@ -22,6 +22,9 @@ const UserSchema = new Mongoose.Schema({
     password: {
         type: String,
         required: true,
+    },
+    victories: {
+        type: Number,
     }
 }, { collection: 'players'})
 
