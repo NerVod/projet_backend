@@ -248,10 +248,46 @@ ioServer.on("connection", (socket) => {
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
   });
-
-
-
+  
+  
+  
   ////////////// déplacement à la souris///////////////////////
+  let startToggle
+
+  socket.on('start', () => {
+    partieEnCours= true
+    hideStart();
+    rebase();
+    startToggle = setInterval(retournerPoupee, 2000)
+      
+  })
+  
+  function retournerPoupee() {
+    if(partieEnCours){
+      valeur = -valeur
+      if(valeur === 1) {
+        value = 'scaleX(1)';
+        sensPoupee = true;
+        ioServer.emit('begin', value)
+      } else {
+        value = 'scaleX(-1)'
+        sensPoupee = false;
+        ioServer.emit('begin', value)
+      }
+      console.log('valeur du scalex :',valeur)
+  }}
+
+
+
+function stopToggle(timer) {
+  clearInterval(timer)
+    value = 'scaleX(1)';
+    sensPoupee = true;
+    partieEnCours = false;
+    ioServer.emit('begin', value)
+}
+
+
 
   socket.on("mousemove", (position) => {
     onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
@@ -270,18 +306,23 @@ ioServer.on("connection", (socket) => {
 
     if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
       onePlayer.left = 0 + "px";
+      
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
     /////////////// Condition de Victoire : dépassement poupée
     
+   
+
+
     for (playerId in allPlayers) {
       const player = allPlayers[playerId];
       if (parseFloat(player.left) > 1100) {
         console.log(onePlayer.id, " à dépassé la poupée ");
         partieEnCours = false;
         showStart();
-        // stopToggle(toggleEnnemi);
+        partieEnCours = false;
+        stopToggle(startToggle);
         addOneVictory();
         
         
@@ -291,47 +332,25 @@ ioServer.on("connection", (socket) => {
     });
 
 
-  ////////////// supression jes joueurs à la déconnexion du socket////////////////
-  socket.on("disconnect", () => {
-    delete allPlayers[onePlayer.id];
-    ioServer.emit("removePlayer", onePlayer);
-  });
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////
-  ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
+    
+    
+    
+    /////////////////////////////////////////////////////////////////////////////////////
+    ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
   let sensPoupee = true;
   let partieEnCours = false;
   let valeur = 1
   let value = `scaleX(${valeur})`
 
-  let retournerPoupee = function () {
-    if(partieEnCours){
-      valeur = -valeur
-      if(valeur === 1) {
-        value = 'scaleX(1)';
-        sensPoupee = true;
-        ioServer.emit('begin', value)
-      } else {
-        value = 'scaleX(-1)'
-        sensPoupee = false;
-        ioServer.emit('begin', value)
-      }
-      console.log('valeur du scalex :',valeur)
-  }}
+  
 
-
-
-function stopToggle() {
-  clearInterval(toggleEnnemi)
-}
+  
   
 let boutonValue = 'visible'
 
   function hideStart() {
     for (playerId in allPlayers){
-       boutonValue = "hidden";
+      boutonValue = "hidden";
       ioServer.emit("hide", boutonValue);
       return boutonValue
     }
@@ -368,33 +387,39 @@ let boutonValue = 'visible'
    ////////////////////////////////////////////////////////////////////////////////////////////
    ////////////  Démarrage partie
 
-  let toggleEnnemi;
-  socket.on("start", () => {
-    partieEnCours = true;
-    toggleEnnemi = setInterval(function() {
-      retournerPoupee()
-      if(!partieEnCours){
-        clearInterval(toggleEnnemi);
-        console.log('clear interval')
-        toggleEnnemi=null;
-        console.log('valeur toggleennemi', toggleEnnemi)
-      }
-      }, Math.random()*3500+4000)
-    ////////////  masquer le bouton de partie après début => évite cumul des timeout
-    hideStart();
-    //////////// repositionnement des joueurs au début du parcours
-    rebase();
-    for (playerId in allPlayers) {
-      const player = allPlayers[playerId];
-      if (parseFloat(player.left) > 1100) {
-        console.log(onePlayer.id, " à dépassé la poupée ");
-        partieEnCours = false;
-        clearInterval(toggleEnnemi); 
-      }
-    }
+  //  function toggleEnnemi() {
 
-  });
+  //  }
+  
+  // let toggleEnnemi;
+  // socket.on("start", () => {
+  //   partieEnCours = true;
+  //   toggleEnnemi = setInterval(function() {
+    //     retournerPoupee()
+    //     if(!partieEnCours){
+  //       clearInterval(toggleEnnemi);
+  //       console.log('clear interval')
+  //       toggleEnnemi=null;
+  //       console.log('valeur toggleennemi', toggleEnnemi)
+  //     }
+  //     }, Math.random()*3500+4000)
+  //   ////////////  masquer le bouton de partie après début => évite cumul des timeout
+  //   hideStart();
+  //   //////////// repositionnement des joueurs au début du parcours
+  //   rebase();
+  //   for (playerId in allPlayers) {
+  //     const player = allPlayers[playerId];
+  //     if (parseFloat(player.left) > 1100) {
+  //       console.log(onePlayer.id, " à dépassé la poupée ");
+  //       partieEnCours = false;
+  //       clearInterval(toggleEnnemi); 
+  //     }
+  //   }
 
+  // });
+
+
+  
 
 
 
@@ -402,9 +427,17 @@ let boutonValue = 'visible'
   
   
   
-  ////// test  message serveur//////////////
-  const messageDuServeur = "do something";
+  // ////// test  message serveur//////////////
+  // const messageDuServeur = "do something";
 
-  ioServer.emit("message", messageDuServeur);
+  // ioServer.emit("message", messageDuServeur);
 
+  ////////////// supression jes joueurs à la déconnexion du socket////////////////
+  socket.on("disconnect", () => {
+    delete allPlayers[onePlayer.id];
+    ioServer.emit("removePlayer", onePlayer);
   });
+
+
+
+});
