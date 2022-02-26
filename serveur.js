@@ -7,7 +7,7 @@ const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
-const Cookies = require('cookies');
+const Cookies = require("cookies");
 require("dotenv").config();
 
 const app = express();
@@ -35,12 +35,9 @@ app.get("/register", (req, res) => {
   res.render("register.pug");
 });
 
-
-
 app.get("/jeu", (req, res) => {
   let cookie = req.headers.cookie;
-  console.log('cookie :', cookie)
-  
+  console.log("cookie :", cookie);
 
   console.log("detection du cookie :", cookie);
   if (cookie) {
@@ -51,7 +48,6 @@ app.get("/jeu", (req, res) => {
     });
   }
 });
-
 
 app.get("*", (req, res) => {
   res.render("404.pug");
@@ -71,6 +67,7 @@ app.post("/register", (req, res) => {
     email: req.body.email,
     gamertag: req.body.gamertag,
     password: bcrypt.hashSync(req.body.password, salt),
+    victories: 0,
   })
     .then((user) => {
       console.log("compte créé dans BDD");
@@ -121,24 +118,22 @@ app.post("/login", (req, res) => {
         } else {
           let leJoueur = Object.values(user);
           let gamertag = leJoueur[2].gamertag;
-          let victories = leJoueur[2].victories
+          let victories = leJoueur[2].victories;
           let token = jwt.sign(
             { id: user._id, email: user.email, gamertag: `${gamertag}` },
             process.env.JWTPRIVATEKEY
           );
-          
-          
-          console.log(gamertag)
-          ;
-          console.log('token après login dans route post:',token)
-  
-        
-        new Cookies(req,res).set('access_token', token, { httpOnly: false, MaxAge: 1000*60*60})
-        res.render("accueil.pug", {
-          message: "Vous pouvez vous rendre à la zone de jeu !",
-        });
-            
-         
+
+          console.log(gamertag);
+          console.log("token après login dans route post:", token);
+
+          new Cookies(req, res).set("access_token", token, {
+            httpOnly: false,
+            MaxAge: 1000 * 60 * 60,
+          });
+          res.render("accueil.pug", {
+            message: "Vous pouvez vous rendre à la zone de jeu !",
+          });
         }
       }
     })
@@ -152,10 +147,6 @@ app.post("/login", (req, res) => {
     });
 });
 
-
-
-
-
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
 });
@@ -168,25 +159,22 @@ const ioServer = new Server(httpServer);
 const randomColor = require("randomcolor");
 const { setInterval } = require("timers");
 
-
 const allPlayers = {};
 
 ioServer.on("connection", (socket) => {
-
   console.log("io connecté avec cookie:" + socket.request.headers.cookie);
-  
-  let uniquePlayer = socket.request.headers.cookie
-  let parsedToken = uniquePlayer.substring(13)
-  console.log('parsedToken', parsedToken)
-  let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY)
-  console.log(dataJoueur['id'])
-  console.log(dataJoueur['gamertag'])
-  
-  
-   ///////////////////////  création du joueur à la connexion //////////////////////
+
+  let uniquePlayer = socket.request.headers.cookie;
+  let parsedToken = uniquePlayer.substring(13);
+  console.log("parsedToken", parsedToken);
+  let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY);
+  console.log(dataJoueur["id"]);
+  console.log(dataJoueur["gamertag"]);
+
+  ///////////////////////  création du joueur à la connexion //////////////////////
   const onePlayer = {
-    id: dataJoueur['id'],
-    gamertag: dataJoueur['gamertag'],
+    id: dataJoueur["id"],
+    gamertag: dataJoueur["gamertag"],
     width: "100px",
     height: "100px",
     top: 255 + Math.random() * 500 + "px",
@@ -194,8 +182,6 @@ ioServer.on("connection", (socket) => {
     position: "absolute",
     backgroundColor: randomColor(),
   };
-
-
 
   ////////////// iD unique pour chaque connexion et envoi à tous les sockets
   allPlayers[onePlayer.id] = onePlayer;
@@ -216,7 +202,7 @@ ioServer.on("connection", (socket) => {
       onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
     }
     if (mouvement.droite) {
-      console.log('flèche droite', onePlayer.gamertag)
+      console.log("flèche droite", onePlayer.gamertag);
       onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
     }
     if (mouvement.bas) {
@@ -243,59 +229,56 @@ ioServer.on("connection", (socket) => {
         console.log(onePlayer.id, " à dépassé la poupée ");
         partieEnCours = false;
         showStart();
-        addOneVictory()
+        addOneVictory();
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
   });
-  
-  
-  
-  ////////////// déplacement à la souris///////////////////////
-  let startToggle
 
-  socket.on('start', () => {
-    partieEnCours= true
+  ////////////// déplacement à la souris///////////////////////
+  let startToggle;
+
+  socket.on("start", () => {
+    partieEnCours = true;
     hideStart();
     rebase();
-    startToggle = setInterval(retournerPoupee, 2000)
-      
-  })
-  
+    startToggle = setInterval(retournerPoupee, 2000);
+  });
+
   function retournerPoupee() {
-    if(partieEnCours){
-      valeur = -valeur
-      if(valeur === 1) {
-        value = 'scaleX(1)';
+    if (partieEnCours) {
+      valeur = -valeur;
+      if (valeur === 1) {
+        value = "scaleX(1)";
         sensPoupee = true;
-        ioServer.emit('begin', value)
+        ioServer.emit("begin", value);
       } else {
-        value = 'scaleX(-1)'
+        value = "scaleX(-1)";
         sensPoupee = false;
-        ioServer.emit('begin', value)
+        ioServer.emit("begin", value);
       }
-      console.log('valeur du scalex :',valeur)
-  }}
+      console.log("valeur du scalex :", valeur);
+    }
+  }
 
-
-
-function stopToggle(timer) {
-  clearInterval(timer)
-    value = 'scaleX(1)';
+  function stopToggle(timer) {
+    clearInterval(timer);
+    value = "scaleX(1)";
     sensPoupee = true;
     partieEnCours = false;
-    ioServer.emit('begin', value)
-}
-
-
+    ioServer.emit("begin", value);
+  }
 
   socket.on("mousemove", (position) => {
-    onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
+    onePlayer.top =
+      parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
 
     if (
-      parseFloat(position.x) <= parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+      parseFloat(position.x) <=
+      parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
     ) {
-      onePlayer.left = parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+      onePlayer.left =
+        parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
       console.log("joueur :", onePlayer.id);
     }
 
@@ -306,14 +289,10 @@ function stopToggle(timer) {
 
     if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
       onePlayer.left = 0 + "px";
-      
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
     /////////////// Condition de Victoire : dépassement poupée
-    
-   
-
 
     for (playerId in allPlayers) {
       const player = allPlayers[playerId];
@@ -324,51 +303,37 @@ function stopToggle(timer) {
         partieEnCours = false;
         stopToggle(startToggle);
         addOneVictory();
-        
-        
+        console.log('winner',player['gamertag']);
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
-    });
+  });
 
-
-    
-    
-    
-    /////////////////////////////////////////////////////////////////////////////////////
-    ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
+  /////////////////////////////////////////////////////////////////////////////////////
+  ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
   let sensPoupee = true;
   let partieEnCours = false;
-  let valeur = 1
-  let value = `scaleX(${valeur})`
+  let valeur = 1;
+  let value = `scaleX(${valeur})`;
 
-  
-
-  
-  
-let boutonValue = 'visible'
+  let boutonValue = "visible";
 
   function hideStart() {
-    for (playerId in allPlayers){
+    for (playerId in allPlayers) {
       boutonValue = "hidden";
       ioServer.emit("hide", boutonValue);
-      return boutonValue
+      return boutonValue;
     }
   }
 
-  
   /////// réapparition bouton start quand un joueur attend l'arrivée ///////////
-  function showStart() { 
-    for (playerId in allPlayers){
+  function showStart() {
+    for (playerId in allPlayers) {
       boutonValue = "visible";
       ioServer.emit("hide", "visible");
-      return boutonValue
+      return boutonValue;
     }
   }
-
-
-
-
 
   function rebase() {
     for (playerId in allPlayers) {
@@ -378,66 +343,21 @@ let boutonValue = 'visible'
   }
   ////// fonction gangnant//////////////
 
-  const addOneVictory = function (winner){
-    let victories = dataJoueur['victories']
-    Database.User.findOneAndUpdate({gamertag: dataJoueur['gamertag']}, {victories: victories++}, console.log('victoire ajoutée'))
-  }  
-  
-   ////////////////////////////////////////////////////////////////////////////////////////////
-   ////////////////////////////////////////////////////////////////////////////////////////////
-   ////////////  Démarrage partie
-
-  //  function toggleEnnemi() {
-
-  //  }
-  
-  // let toggleEnnemi;
-  // socket.on("start", () => {
-  //   partieEnCours = true;
-  //   toggleEnnemi = setInterval(function() {
-    //     retournerPoupee()
-    //     if(!partieEnCours){
-  //       clearInterval(toggleEnnemi);
-  //       console.log('clear interval')
-  //       toggleEnnemi=null;
-  //       console.log('valeur toggleennemi', toggleEnnemi)
-  //     }
-  //     }, Math.random()*3500+4000)
-  //   ////////////  masquer le bouton de partie après début => évite cumul des timeout
-  //   hideStart();
-  //   //////////// repositionnement des joueurs au début du parcours
-  //   rebase();
-  //   for (playerId in allPlayers) {
-  //     const player = allPlayers[playerId];
-  //     if (parseFloat(player.left) > 1100) {
-  //       console.log(onePlayer.id, " à dépassé la poupée ");
-  //       partieEnCours = false;
-  //       clearInterval(toggleEnnemi); 
-  //     }
-  //   }
-
-  // });
-
-
-  
-
-
-
-   
-  
-  
-  
-  // ////// test  message serveur//////////////
-  // const messageDuServeur = "do something";
-
-  // ioServer.emit("message", messageDuServeur);
+  const addOneVictory = function (winner) {
+    let victories = dataJoueur["victories"];
+    if(!victories){victories = 0}
+    let nouvelleVictoire = victories++
+    Database.User.findOneAndUpdate(
+      { gamertag: dataJoueur["gamertag"] },
+      { victories: `${nouvelleVictoire}` },
+      console.log("victoire ajoutée :"+ `${dataJoueur['gamertag']}` +' '+ `${dataJoueur['nouvelleVictoire']}`)
+      
+    );
+  };
 
   ////////////// supression jes joueurs à la déconnexion du socket////////////////
   socket.on("disconnect", () => {
     delete allPlayers[onePlayer.id];
     ioServer.emit("removePlayer", onePlayer);
   });
-
-
-
 });
