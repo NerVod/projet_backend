@@ -308,11 +308,10 @@ ioServer.on("connection", (socket) => {
       const player = allPlayers[playerId];
       if (parseFloat(player.left) > 1100) {
         console.log(onePlayer.id, " à dépassé la poupée ");
-        partieEnCours = false;
         showStart();
-        partieEnCours = false;
         stopToggle(startToggle);
         addOneVictory(player);
+        // partieEnCours = false;
         console.log("winner", player["gamertag"]);
       }
     }
@@ -372,25 +371,33 @@ ioServer.on("connection", (socket) => {
   // };
 
   const addOneVictory = async function (winner) {
-    let victories = Database.User.findOne({ gamertag: dataJoueur["gamertag"] })
-    console.log('victoires dans mongo avant ajout score',victories[victories])
+  
+    let victories = await Database.User.findOne({ gamertag: dataJoueur["gamertag"] })
+    console.log('objet victories soit le joueur :', victories)
+    console.log('victoires dans mongo avant ajout score',victories['victories'])
     
-    dataJoueur["victories"];
+    victories = victories["victories"];
     console.log('victories :', victories)
     let nouvelleVictoire = parseFloat(victories) + 1;
     console.log('nouvellevictoire :', nouvelleVictoire)
-    const gagnant = await Database.User.findOneAndUpdate(
-      { gamertag: dataJoueur["gamertag"] },
-      { victories: `${nouvelleVictoire}` },
-      {new : true},
-      console.log(
-        "victoire ajoutée :" +
+
+      const gagnant = await Database.User.findOneAndUpdate(
+        { gamertag: dataJoueur["gamertag"] },
+        { victories: `${nouvelleVictoire}` },
+        {new : true},
+        console.log(
+          "victoire ajoutée :" +
           `${dataJoueur["gamertag"]}` +
           " " +
           `${nouvelleVictoire}`
-      )
-    );
-    console.log('gagnant', gagnant)
+          )
+          );
+          console.log('gagnant', gagnant)
+          partieEnCours = false
+          return partieEnCours
+   
+          
+
   };
 
   
@@ -399,5 +406,9 @@ ioServer.on("connection", (socket) => {
   socket.on("disconnect", () => {
     delete allPlayers[onePlayer.id];
     ioServer.emit("removePlayer", onePlayer);
+  });
+  socket.on("disconnect", () => {
+    stopToggle(startToggle);
+    ioServer.emit("begin", onePlayer);
   });
 });
