@@ -120,7 +120,12 @@ app.post("/login", (req, res) => {
           let gamertag = leJoueur[2].gamertag;
           let victories = leJoueur[2].victories;
           let token = jwt.sign(
-            { id: user._id, email: user.email, gamertag: `${gamertag}` },
+            {
+              id: user._id,
+              email: user.email,
+              gamertag: `${gamertag}`,
+              victories: `${victories}`,
+            },
             process.env.JWTPRIVATEKEY
           );
 
@@ -158,6 +163,9 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const randomColor = require("randomcolor");
 const { setInterval } = require("timers");
+const Mongoose = require('mongoose');
+const User = require('./public/js/db')
+const url = process.env.DB;
 
 const allPlayers = {};
 
@@ -170,11 +178,13 @@ ioServer.on("connection", (socket) => {
   let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY);
   console.log(dataJoueur["id"]);
   console.log(dataJoueur["gamertag"]);
+  console.log(dataJoueur["victories"]);
 
   ///////////////////////  création du joueur à la connexion //////////////////////
   const onePlayer = {
     id: dataJoueur["id"],
     gamertag: dataJoueur["gamertag"],
+    victories: dataJoueur["victories"],
     width: "100px",
     height: "100px",
     top: 255 + Math.random() * 500 + "px",
@@ -197,43 +207,43 @@ ioServer.on("connection", (socket) => {
 
   /////////////  déplacement du jouer avec les flèches clvier
 
-  socket.on("deplacement", (mouvement) => {
-    if (mouvement.haut) {
-      onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
-    }
-    if (mouvement.droite) {
-      console.log("flèche droite", onePlayer.gamertag);
-      onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
-    }
-    if (mouvement.bas) {
-      onePlayer.top = parseFloat(onePlayer.top) + 2 + "px";
-    }
-    if (mouvement.gauche) {
-      onePlayer.left = parseFloat(onePlayer.left) - 2 + "px";
-    }
+  // socket.on("deplacement", (mouvement) => {
+  //   if (mouvement.haut) {
+  //     onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
+  //   }
+  //   if (mouvement.droite) {
+  //     console.log("flèche droite", onePlayer.gamertag);
+  //     onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
+  //   }
+  //   if (mouvement.bas) {
+  //     onePlayer.top = parseFloat(onePlayer.top) + 2 + "px";
+  //   }
+  //   if (mouvement.gauche) {
+  //     onePlayer.left = parseFloat(onePlayer.left) - 2 + "px";
+  //   }
 
-    if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
-      return;
-    if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
-      return;
+  //   if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
+  //     return;
+  //   if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
+  //     return;
 
-    if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
-      onePlayer.left = 0 + "px";
-    }
+  //   if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
+  //     onePlayer.left = 0 + "px";
+  //   }
 
-    ///////////////// détection de l'arrivée d'un joueur derrière la poupée //////////////
-    for (playerId in allPlayers) {
-      const player = allPlayers[playerId];
+  //   ///////////////// détection de l'arrivée d'un joueur derrière la poupée //////////////
+  //   for (playerId in allPlayers) {
+  //     const player = allPlayers[playerId];
 
-      if (parseFloat(player.left) > 1200) {
-        console.log(onePlayer.id, " à dépassé la poupée ");
-        partieEnCours = false;
-        showStart();
-        addOneVictory();
-      }
-    }
-    ioServer.emit("updateOrCreatePlayer", onePlayer);
-  });
+  //     if (parseFloat(player.left) > 1200) {
+  //       console.log(onePlayer.id, " à dépassé la poupée ");
+  //       partieEnCours = false;
+  //       showStart();
+  //       addOneVictory();
+  //     }
+  //   }
+  //   ioServer.emit("updateOrCreatePlayer", onePlayer);
+  // });
 
   ////////////// déplacement à la souris///////////////////////
   let startToggle;
@@ -302,8 +312,8 @@ ioServer.on("connection", (socket) => {
         showStart();
         partieEnCours = false;
         stopToggle(startToggle);
-        addOneVictory();
-        console.log('winner',player['gamertag']);
+        addOneVictory(player);
+        console.log("winner", player["gamertag"]);
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
@@ -343,17 +353,47 @@ ioServer.on("connection", (socket) => {
   }
   ////// fonction gangnant//////////////
 
-  const addOneVictory = function (winner) {
-    let victories = dataJoueur["victories"];
-    if(!victories){victories = 0}
-    let nouvelleVictoire = victories++
-    Database.User.findOneAndUpdate(
+  // const addOneVictory = function (winner) {
+  //   let victories = dataJoueur["victories"];
+  //   console.log('victories :', victories)
+  //   let nouvelleVictoire = parseFloat(victories) + 1;
+  //   console.log('nouvellevictoire :', nouvelleVictoire)
+  //   Database.User.findOneAndUpdate(
+  //     { gamertag: dataJoueur["gamertag"] },
+  //     { victories: `${nouvelleVictoire}` },
+  //     {new : true},
+  //     console.log(
+  //       "victoire ajoutée :" +
+  //         `${dataJoueur["gamertag"]}` +
+  //         " " +
+  //         `${nouvelleVictoire}`
+  //     )
+  //   );
+  // };
+
+  const addOneVictory = async function (winner) {
+    let victories = Database.User.findOne({ gamertag: dataJoueur["gamertag"] })
+    console.log('victoires dans mongo avant ajout score',victories[victories])
+    
+    dataJoueur["victories"];
+    console.log('victories :', victories)
+    let nouvelleVictoire = parseFloat(victories) + 1;
+    console.log('nouvellevictoire :', nouvelleVictoire)
+    const gagnant = await Database.User.findOneAndUpdate(
       { gamertag: dataJoueur["gamertag"] },
       { victories: `${nouvelleVictoire}` },
-      console.log("victoire ajoutée :"+ `${dataJoueur['gamertag']}` +' '+ `${dataJoueur['nouvelleVictoire']}`)
-      
+      {new : true},
+      console.log(
+        "victoire ajoutée :" +
+          `${dataJoueur["gamertag"]}` +
+          " " +
+          `${nouvelleVictoire}`
+      )
     );
+    console.log('gagnant', gagnant)
   };
+
+  
 
   ////////////// supression jes joueurs à la déconnexion du socket////////////////
   socket.on("disconnect", () => {
