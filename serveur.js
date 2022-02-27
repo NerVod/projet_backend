@@ -168,6 +168,8 @@ const User = require('./public/js/db')
 const url = process.env.DB;
 
 const allPlayers = {};
+let sensPoupee = true;
+let partieEnCours = false;
 
 ioServer.on("connection", (socket) => {
   console.log("io connecté avec cookie:" + socket.request.headers.cookie);
@@ -205,45 +207,7 @@ ioServer.on("connection", (socket) => {
     ioServer.emit("updateOrCreatePlayer", player);
   }
 
-  /////////////  déplacement du jouer avec les flèches clvier
-
-  // socket.on("deplacement", (mouvement) => {
-  //   if (mouvement.haut) {
-  //     onePlayer.top = parseFloat(onePlayer.top) - 2 + "px";
-  //   }
-  //   if (mouvement.droite) {
-  //     console.log("flèche droite", onePlayer.gamertag);
-  //     onePlayer.left = parseFloat(onePlayer.left) + 2 + "px";
-  //   }
-  //   if (mouvement.bas) {
-  //     onePlayer.top = parseFloat(onePlayer.top) + 2 + "px";
-  //   }
-  //   if (mouvement.gauche) {
-  //     onePlayer.left = parseFloat(onePlayer.left) - 2 + "px";
-  //   }
-
-  //   if (parseFloat(onePlayer.top) < 260 || parseFloat(onePlayer.top) > 1060)
-  //     return;
-  //   if (parseFloat(onePlayer.left) < 5 || parseFloat(onePlayer.left) > 1510)
-  //     return;
-
-  //   if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
-  //     onePlayer.left = 0 + "px";
-  //   }
-
-  //   ///////////////// détection de l'arrivée d'un joueur derrière la poupée //////////////
-  //   for (playerId in allPlayers) {
-  //     const player = allPlayers[playerId];
-
-  //     if (parseFloat(player.left) > 1200) {
-  //       console.log(onePlayer.id, " à dépassé la poupée ");
-  //       partieEnCours = false;
-  //       showStart();
-  //       addOneVictory();
-  //     }
-  //   }
-  //   ioServer.emit("updateOrCreatePlayer", onePlayer);
-  // });
+ 
 
   ////////////// déplacement à la souris///////////////////////
   let startToggle;
@@ -255,17 +219,22 @@ ioServer.on("connection", (socket) => {
     startToggle = setInterval(retournerPoupee, 2000);
   });
 
+  socket.on('join', () => {
+    partieEnCours = true;
+    rebase()
+  })
+
   function retournerPoupee() {
     if (partieEnCours) {
       valeur = -valeur;
       if (valeur === 1) {
         value = "scaleX(1)";
         sensPoupee = true;
-        ioServer.emit("begin", value);
+        ioServer.emit("begin", value, sensPoupee);
       } else {
         value = "scaleX(-1)";
         sensPoupee = false;
-        ioServer.emit("begin", value);
+        ioServer.emit("begin", value, sensPoupee);
       }
       console.log("valeur du scalex :", valeur);
     }
@@ -280,15 +249,12 @@ ioServer.on("connection", (socket) => {
   }
 
   socket.on("mousemove", (position) => {
-    onePlayer.top =
-      parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
+    onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
 
     if (
-      parseFloat(position.x) <=
-      parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+      parseFloat(position.x) <= parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
     ) {
-      onePlayer.left =
-        parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+      onePlayer.left = parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
       console.log("joueur :", onePlayer.id);
     }
 
@@ -298,7 +264,7 @@ ioServer.on("connection", (socket) => {
       return;
 
     if (sensPoupee && parseFloat(onePlayer.left) < 1200) {
-      onePlayer.left = 0 + "px";
+      onePlayer.left = 30 + "px";
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -320,8 +286,8 @@ ioServer.on("connection", (socket) => {
 
   /////////////////////////////////////////////////////////////////////////////////////
   ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
-  let sensPoupee = true;
-  let partieEnCours = false;
+  // let sensPoupee = true;
+  // let partieEnCours = false;
   let valeur = 1;
   let value = `scaleX(${valeur})`;
 
@@ -352,23 +318,7 @@ ioServer.on("connection", (socket) => {
   }
   ////// fonction gangnant//////////////
 
-  // const addOneVictory = function (winner) {
-  //   let victories = dataJoueur["victories"];
-  //   console.log('victories :', victories)
-  //   let nouvelleVictoire = parseFloat(victories) + 1;
-  //   console.log('nouvellevictoire :', nouvelleVictoire)
-  //   Database.User.findOneAndUpdate(
-  //     { gamertag: dataJoueur["gamertag"] },
-  //     { victories: `${nouvelleVictoire}` },
-  //     {new : true},
-  //     console.log(
-  //       "victoire ajoutée :" +
-  //         `${dataJoueur["gamertag"]}` +
-  //         " " +
-  //         `${nouvelleVictoire}`
-  //     )
-  //   );
-  // };
+  
 
   const addOneVictory = async function (winner) {
   

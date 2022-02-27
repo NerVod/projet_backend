@@ -28,6 +28,8 @@ window.document.addEventListener('DOMContentLoaded', () => {
         const playerElement = updateOrCreatePlayer(player);
     }) 
 
+    
+
     socket.on('removePlayer', (player) => {
         const divElement = window.document.getElementById(player.id);
         if(divElement){
@@ -44,12 +46,13 @@ window.document.addEventListener('DOMContentLoaded', () => {
     })
    ////////////////////////////////////
      const startGame = document.getElementById('startGame')
+     const joinGame = document.getElementById('joinGame')
      const poupee = document.getElementById('poupee');
 
      startGame.addEventListener('click', () => {      
         socket.emit('start')
      })
-
+     
 
      socket.on('begin',(value) => {
          // begin the game :  démarre 123soleil coté serveur sur tous les screens
@@ -68,35 +71,35 @@ window.document.addEventListener('DOMContentLoaded', () => {
         console.log(messageSuServeur)
      })
 
-     window.addEventListener('keydown', (e) => {
-         const mouvement={
-             haut: false,
-             droite: false,
-             bas: false,
-             gauche: false,
-         }
+    //  window.addEventListener('keydown', (e) => {
+    //      const mouvement={
+    //          haut: false,
+    //          droite: false,
+    //          bas: false,
+    //          gauche: false,
+    //      }
 
-        if(e.target !== document.body) return null
-        e.preventDefault()
-        if('ArrowUp'){
-            mouvement.droite = true;
-            socket.emit('deplacement',  mouvement)
-        }
-        if('ArrowRight'){
-            mouvement.droite = true;
-            socket.emit('deplacement',  mouvement)
-        }
-        if('ArrowDown'){
-            mouvement.droite = true;
-            socket.emit('deplacement',  mouvement)
-        }
-        if('ArrowLeft'){
-            mouvement.droite = true;
-            socket.emit('deplacement',  mouvement)
-        }
+    //     if(e.target !== document.body) return null
+    //     e.preventDefault()
+    //     if('ArrowUp'){
+    //         mouvement.droite = true;
+    //         socket.emit('deplacement',  mouvement)
+    //     }
+    //     if('ArrowRight'){
+    //         mouvement.droite = true;
+    //         socket.emit('deplacement',  mouvement)
+    //     }
+    //     if('ArrowDown'){
+    //         mouvement.droite = true;
+    //         socket.emit('deplacement',  mouvement)
+    //     }
+    //     if('ArrowLeft'){
+    //         mouvement.droite = true;
+    //         socket.emit('deplacement',  mouvement)
+    //     }
 
 
-     })
+    //  })
 
   
 
