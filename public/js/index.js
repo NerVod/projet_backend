@@ -21,22 +21,22 @@ window.document.addEventListener('DOMContentLoaded', () => {
     }
    
     
-
-    const socket = io('http://localhost:8080');
-
+if(typeof io !== 'undefined') {
+    const socket = io('http://192.168.100.157:8080') || io('http://localhost:8080');
+    
     socket.on('updateOrCreatePlayer', (player) => {
         const playerElement = updateOrCreatePlayer(player);
     }) 
 
     
-
+    
     socket.on('removePlayer', (player) => {
         const divElement = window.document.getElementById(player.id);
         if(divElement){
             divElement.parentNode.removeChild(divElement)
         }
     })
-
+    
     window.addEventListener('mousemove', (e) => {
         const position = {
             x: e.clientX,
@@ -44,68 +44,64 @@ window.document.addEventListener('DOMContentLoaded', () => {
         };
         socket.emit('mousemove', position)
     })
-   ////////////////////////////////////
-     const startGame = document.getElementById('startGame')
-     const joinGame = document.getElementById('joinGame')
-     const poupee = document.getElementById('poupee');
-
-     startGame.addEventListener('click', () => {      
+    ////////////////////////////////////
+    const startGame = document.getElementById('startGame')
+    const poupee = document.getElementById('poupee');
+    
+    startGame.addEventListener('click', () => {      
         socket.emit('start')
+    })
+    
+    
+    socket.on('begin',(value) => {
+        // begin the game :  démarre 123soleil coté serveur sur tous les screens
+        poupee.style.transform = value
+    })
+    
+    
+    
+    socket.on('hide', (boutonValue) => {
+        startGame.style.visibility = boutonValue
      })
      
-
-     socket.on('begin',(value) => {
-         // begin the game :  démarre 123soleil coté serveur sur tous les screens
-        poupee.style.transform = value
-     })
-
-
-
-     socket.on('hide', (boutonValue) => {
-         startGame.style.visibility = boutonValue
-     })
-    
-   
-
+     
+     
      socket.on('message', (messageSuServeur) =>{
-        console.log(messageSuServeur)
-     })
-
-    //  window.addEventListener('keydown', (e) => {
-    //      const mouvement={
-    //          haut: false,
-    //          droite: false,
-    //          bas: false,
-    //          gauche: false,
-    //      }
-
-    //     if(e.target !== document.body) return null
-    //     e.preventDefault()
-    //     if('ArrowUp'){
-    //         mouvement.droite = true;
-    //         socket.emit('deplacement',  mouvement)
-    //     }
-    //     if('ArrowRight'){
-    //         mouvement.droite = true;
-    //         socket.emit('deplacement',  mouvement)
-    //     }
-    //     if('ArrowDown'){
-    //         mouvement.droite = true;
-    //         socket.emit('deplacement',  mouvement)
-    //     }
-    //     if('ArrowLeft'){
-    //         mouvement.droite = true;
-    //         socket.emit('deplacement',  mouvement)
-    //     }
-
-
-    //  })
-
-  
-
-
-
-
+         console.log(messageSuServeur)
+        })
+        
+        //  window.addEventListener('keydown', (e) => {
+            //      const mouvement={
+                //          haut: false,
+                //          droite: false,
+                //          bas: false,
+                //          gauche: false,
+                //      }
+                
+                //     if(e.target !== document.body) return null
+                //     e.preventDefault()
+                //     if('ArrowUp'){
+                    //         mouvement.droite = true;
+                    //         socket.emit('deplacement',  mouvement)
+                    //     }
+                    //     if('ArrowRight'){
+                        //         mouvement.droite = true;
+                        //         socket.emit('deplacement',  mouvement)
+                        //     }
+                        //     if('ArrowDown'){
+                            //         mouvement.droite = true;
+                            //         socket.emit('deplacement',  mouvement)
+                            //     }
+                            //     if('ArrowLeft'){
+                                //         mouvement.droite = true;
+                                //         socket.emit('deplacement',  mouvement)
+                                //     }
+                                
+                                
+                                //  })
+                              
+                                
+}
 
 
 

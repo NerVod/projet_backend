@@ -8,13 +8,22 @@ const salt = bcrypt.genSaltSync(saltRounds);
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const Cookies = require("cookies");
+const objetIp = require('./public/js/ip')
+
 require("dotenv").config();
+
 
 const app = express();
 
+// détecter ip serveur ici puis placer dans js client
+
+console.log('résultats recherche ip objet :', objetIp);
+console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
+let socketServeur = objetIp['results']['Wi-Fi'][0]
+
 const config = {
   port: process.env.PORT || 8080,
-  host: process.env.HOST || "127.0.0.1",
+  host: process.env.HOST || objetIp['results']['Wi-Fi'][0],
 };
 
 app.use("/css", express.static(path.join(__dirname, "public/css")));
@@ -25,10 +34,11 @@ app.use("/.pug", express.static(path.join(__dirname, "views")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(cors());
 
 app.set("view-engine", "pug");
 
-app.get("/accueil", (req, res) => {
+app.get("/", (req, res) => {
   res.render("accueil.pug");
 });
 app.get("/register", (req, res) => {
@@ -37,9 +47,7 @@ app.get("/register", (req, res) => {
 
 app.get("/jeu", (req, res) => {
   let cookie = req.headers.cookie;
-  console.log("cookie :", cookie);
-
-  console.log("detection du cookie :", cookie);
+  // console.log("detection du cookie :", cookie);
   if (cookie) {
     res.render("jeu.pug");
   } else {
@@ -47,6 +55,10 @@ app.get("/jeu", (req, res) => {
       message: "Erreur d'identifiants route /jeu, Veuillez vous enregistrer !",
     });
   }
+});
+
+app.get('/highscore', (req, res) => {
+  res.render('highscore.pug')
 });
 
 app.get("*", (req, res) => {
@@ -152,6 +164,30 @@ app.post("/login", (req, res) => {
     });
 });
 
+const hallOfFame = [];
+
+let topPlayers = Database.User.find({})
+  .then()
+  console.log('top players :',topPlayers)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
 });
@@ -163,9 +199,12 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const randomColor = require("randomcolor");
 const { setInterval } = require("timers");
-const Mongoose = require('mongoose');
-const User = require('./public/js/db')
-const url = process.env.DB;
+const { resourceLimits } = require("worker_threads");
+const { default: results } = require("./public/js/ip");
+const { topTenPlayers } = require("./public/js/highScore");
+// const Mongoose = require('mongoose');
+// const User = require('./public/js/db')
+// const url = process.env.DB;
 
 const allPlayers = {};
 let sensPoupee = true;
@@ -173,14 +212,15 @@ let partieEnCours = false;
 
 ioServer.on("connection", (socket) => {
   console.log("io connecté avec cookie:" + socket.request.headers.cookie);
+  
 
   let uniquePlayer = socket.request.headers.cookie;
   let parsedToken = uniquePlayer.substring(13);
   console.log("parsedToken", parsedToken);
   let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY);
-  console.log(dataJoueur["id"]);
-  console.log(dataJoueur["gamertag"]);
-  console.log(dataJoueur["victories"]);
+  // console.log(dataJoueur["id"]);
+  // console.log(dataJoueur["gamertag"]);
+  // console.log(dataJoueur["victories"]);
 
   ///////////////////////  création du joueur à la connexion //////////////////////
   const onePlayer = {
@@ -236,7 +276,7 @@ ioServer.on("connection", (socket) => {
         sensPoupee = false;
         ioServer.emit("begin", value, sensPoupee);
       }
-      console.log("valeur du scalex :", valeur);
+      // console.log("valeur du scalex :", valeur);
     }
   }
 
@@ -273,12 +313,11 @@ ioServer.on("connection", (socket) => {
     for (playerId in allPlayers) {
       const player = allPlayers[playerId];
       if (parseFloat(player.left) > 1100) {
-        console.log(onePlayer.id, " à dépassé la poupée ");
+        // console.log(onePlayer.id, " à dépassé la poupée ");
         showStart();
         stopToggle(startToggle);
         addOneVictory(player);
-        // partieEnCours = false;
-        console.log("winner", player["gamertag"]);
+        // console.log("winner", player["gamertag"]);
       }
     }
     ioServer.emit("updateOrCreatePlayer", onePlayer);
@@ -286,8 +325,7 @@ ioServer.on("connection", (socket) => {
 
   /////////////////////////////////////////////////////////////////////////////////////
   ///////// gestion démarrage partie et fonctions inversion sens poupée  ///////////
-  // let sensPoupee = true;
-  // let partieEnCours = false;
+
   let valeur = 1;
   let value = `scaleX(${valeur})`;
 
@@ -323,31 +361,23 @@ ioServer.on("connection", (socket) => {
   const addOneVictory = async function (winner) {
   
     let victories = await Database.User.findOne({ gamertag: dataJoueur["gamertag"] })
-    console.log('objet victories soit le joueur :', victories)
-    console.log('victoires dans mongo avant ajout score',victories['victories'])
+    // console.log('objet victories soit le joueur :', victories)
+    // console.log('victoires dans mongo avant ajout score',victories['victories'])
     
     victories = victories["victories"];
-    console.log('victories :', victories)
+    // console.log('victories :', victories)
     let nouvelleVictoire = parseFloat(victories) + 1;
-    console.log('nouvellevictoire :', nouvelleVictoire)
+    // console.log('nouvellevictoire :', nouvelleVictoire)
 
       const gagnant = await Database.User.findOneAndUpdate(
         { gamertag: dataJoueur["gamertag"] },
         { victories: `${nouvelleVictoire}` },
         {new : true},
-        console.log(
-          "victoire ajoutée :" +
-          `${dataJoueur["gamertag"]}` +
-          " " +
-          `${nouvelleVictoire}`
-          )
+        // console.log("victoire ajoutée :" +`${dataJoueur["gamertag"]}` +" " +`${nouvelleVictoire}`)
           );
           console.log('gagnant', gagnant)
           partieEnCours = false
           return partieEnCours
-   
-          
-
   };
 
   
