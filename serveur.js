@@ -8,22 +8,23 @@ const salt = bcrypt.genSaltSync(saltRounds);
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const Cookies = require("cookies");
-const objetIp = require('./public/js/ip')
+const objetIp = require("./public/js/ip");
 
 require("dotenv").config();
-
 
 const app = express();
 
 // détecter ip serveur ici puis placer dans js client
 
-console.log('résultats recherche ip objet :', objetIp);
-console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
-let socketServeur = objetIp['results']['Wi-Fi'][0]
+console.log("résultats recherche ip objet :", objetIp);
+// console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
+console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
+// let socketServeur = objetIp['results']['Wi-Fi'][0]
+let socketServeur = objetIp["results"]["Ethernet 2"][0];
 
 const config = {
   port: process.env.PORT || 8080,
-  host: process.env.HOST || objetIp['results']['Wi-Fi'][0],
+  host: process.env.HOST || objetIp["results"]["Wi-Fi"][0],
 };
 
 app.use("/css", express.static(path.join(__dirname, "public/css")));
@@ -57,8 +58,8 @@ app.get("/jeu", (req, res) => {
   }
 });
 
-app.get('/highscore', (req, res) => {
-  res.render('highscore.pug')
+app.get("/highscore", (req, res) => {
+  res.render("highscore.pug");
 });
 
 app.get("*", (req, res) => {
@@ -166,27 +167,28 @@ app.post("/login", (req, res) => {
 
 const hallOfFame = [];
 
-let topPlayers = Database.User.find({})
-  .then()
-  console.log('top players :',topPlayers)
+// let topPlayers = Database.User.find({}, {_id:0, gamertag:1, victories:1}).sort({victories:-1})
 
+(async function () {
+  try {
+    await Mongoose.connect(process.env.DB, { useNewUrlParser: true });
+    let topPlayers = await Database.User.find(
+      {},
+      { _id: 0, gamertag: 1, victories: 1 }
+    ).sort({ victories: -1 });
+    console.log("topPlayers en BDD :", topPlayers);
+    for (let i = 0; i < topPlayers.length; i++) {
+      hallOfFame[i].push(topPlayers[i]);
+    }
 
+    console.log("hallOfFame dans iife :", hallOfFame);
+    return hallOfFame;
+  } catch (err) {
+    console.log("erreur recherche topplayers", err);
+  }
+})();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+console.log("hallOfFame :", hallOfFame);
 
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
@@ -202,6 +204,7 @@ const { setInterval } = require("timers");
 const { resourceLimits } = require("worker_threads");
 const { default: results } = require("./public/js/ip");
 const { topTenPlayers } = require("./public/js/highScore");
+const { Mongoose } = require("mongoose");
 // const Mongoose = require('mongoose');
 // const User = require('./public/js/db')
 // const url = process.env.DB;
@@ -212,7 +215,6 @@ let partieEnCours = false;
 
 ioServer.on("connection", (socket) => {
   console.log("io connecté avec cookie:" + socket.request.headers.cookie);
-  
 
   let uniquePlayer = socket.request.headers.cookie;
   let parsedToken = uniquePlayer.substring(13);
@@ -247,8 +249,6 @@ ioServer.on("connection", (socket) => {
     ioServer.emit("updateOrCreatePlayer", player);
   }
 
- 
-
   ////////////// déplacement à la souris///////////////////////
   let startToggle;
 
@@ -259,10 +259,10 @@ ioServer.on("connection", (socket) => {
     startToggle = setInterval(retournerPoupee, 2000);
   });
 
-  socket.on('join', () => {
+  socket.on("join", () => {
     partieEnCours = true;
-    rebase()
-  })
+    rebase();
+  });
 
   function retournerPoupee() {
     if (partieEnCours) {
@@ -289,12 +289,15 @@ ioServer.on("connection", (socket) => {
   }
 
   socket.on("mousemove", (position) => {
-    onePlayer.top = parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
+    onePlayer.top =
+      parseFloat(position.y) - parseFloat(onePlayer.height) / 2 + "px";
 
     if (
-      parseFloat(position.x) <= parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
+      parseFloat(position.x) <=
+      parseFloat(onePlayer.left) + parseFloat(onePlayer.width)
     ) {
-      onePlayer.left = parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
+      onePlayer.left =
+        parseFloat(position.x) - parseFloat(onePlayer.width) / 2 + "px";
       console.log("joueur :", onePlayer.id);
     }
 
@@ -356,31 +359,28 @@ ioServer.on("connection", (socket) => {
   }
   ////// fonction gangnant//////////////
 
-  
-
   const addOneVictory = async function (winner) {
-  
-    let victories = await Database.User.findOne({ gamertag: dataJoueur["gamertag"] })
+    let victories = await Database.User.findOne({
+      gamertag: dataJoueur["gamertag"],
+    });
     // console.log('objet victories soit le joueur :', victories)
     // console.log('victoires dans mongo avant ajout score',victories['victories'])
-    
+
     victories = victories["victories"];
     // console.log('victories :', victories)
     let nouvelleVictoire = parseFloat(victories) + 1;
     // console.log('nouvellevictoire :', nouvelleVictoire)
 
-      const gagnant = await Database.User.findOneAndUpdate(
-        { gamertag: dataJoueur["gamertag"] },
-        { victories: `${nouvelleVictoire}` },
-        {new : true},
-        // console.log("victoire ajoutée :" +`${dataJoueur["gamertag"]}` +" " +`${nouvelleVictoire}`)
-          );
-          console.log('gagnant', gagnant)
-          partieEnCours = false
-          return partieEnCours
+    const gagnant = await Database.User.findOneAndUpdate(
+      { gamertag: dataJoueur["gamertag"] },
+      { victories: `${nouvelleVictoire}` },
+      { new: true }
+      // console.log("victoire ajoutée :" +`${dataJoueur["gamertag"]}` +" " +`${nouvelleVictoire}`)
+    );
+    console.log("gagnant", gagnant);
+    partieEnCours = false;
+    return partieEnCours;
   };
-
-  
 
   ////////////// supression jes joueurs à la déconnexion du socket////////////////
   socket.on("disconnect", () => {
