@@ -9,7 +9,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const Cookies = require("cookies");
 const objetIp = require("./public/js/ip");
-
+const Mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
@@ -17,10 +17,10 @@ const app = express();
 // détecter ip serveur ici puis placer dans js client
 
 console.log("résultats recherche ip objet :", objetIp);
-// console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
-console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
-// let socketServeur = objetIp['results']['Wi-Fi'][0]
-let socketServeur = objetIp["results"]["Ethernet 2"][0];
+console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
+// console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
+let socketServeur = objetIp['results']['Wi-Fi'][0]
+// let socketServeur = objetIp["results"]["Ethernet 2"][0];
 
 const config = {
   port: process.env.PORT || 8080,
@@ -59,6 +59,15 @@ app.get("/jeu", (req, res) => {
 });
 
 app.get("/highscore", (req, res) => {
+  Database.User.find({},{ _id:0, gamertag: 1, victories :1}).sort({victories: -1}).limit(10)
+  .then((winners) => {
+    console.log('log sur route highscore',winners)
+    for(let i=0; i< winners.length; i++){
+      hallOfFame.push(winners[i])
+      console.log('push hall of fame :', hallOfFame)
+    }
+    console.log('hallOfFame après bouclage :', hallOfFame)
+  })
   res.render("highscore.pug");
 });
 
@@ -169,26 +178,27 @@ const hallOfFame = [];
 
 // let topPlayers = Database.User.find({}, {_id:0, gamertag:1, victories:1}).sort({victories:-1})
 
-(async function () {
-  try {
-    await Mongoose.connect(process.env.DB, { useNewUrlParser: true });
-    let topPlayers = await Database.User.find(
-      {},
-      { _id: 0, gamertag: 1, victories: 1 }
-    ).sort({ victories: -1 });
-    console.log("topPlayers en BDD :", topPlayers);
-    for (let i = 0; i < topPlayers.length; i++) {
-      hallOfFame[i].push(topPlayers[i]);
-    }
+// (async function () {
+//   try {
+//     await Mongoose.connect(process.env.DB, { useNewUrlParser: true });
+//     let topPlayers = await Database.User.find(
+//       {},
+//       { _id: 0, gamertag: 1, victories: 1 }
+//     )
+//     // .sort({ victories: -1 });
+//     console.log("topPlayers en BDD :", topPlayers);
+//     for (let i = 0; i < topPlayers.length; i++) {
+//       hallOfFame[i].push(topPlayers[i]);
+//     }
 
-    console.log("hallOfFame dans iife :", hallOfFame);
-    return hallOfFame;
-  } catch (err) {
-    console.log("erreur recherche topplayers", err);
-  }
-})();
+//     console.log("hallOfFame dans iife :", hallOfFame);
+//     return hallOfFame;
+//   } catch (err) {
+//     console.log("erreur recherche topplayers", err);
+//   }
+// })();
 
-console.log("hallOfFame :", hallOfFame);
+// console.log("hallOfFame :", hallOfFame);
 
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
@@ -204,7 +214,7 @@ const { setInterval } = require("timers");
 const { resourceLimits } = require("worker_threads");
 const { default: results } = require("./public/js/ip");
 const { topTenPlayers } = require("./public/js/highScore");
-const { Mongoose } = require("mongoose");
+// const { Mongoose } = require("mongoose");
 // const Mongoose = require('mongoose');
 // const User = require('./public/js/db')
 // const url = process.env.DB;
