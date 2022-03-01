@@ -66,6 +66,7 @@ app.get("/highscore", (req, res) => {
       hallOfFame.push(winners[i])
       console.log('push hall of fame :', hallOfFame)
     }
+    
     console.log('hallOfFame après bouclage :', hallOfFame)
   })
   res.render("highscore.pug");
