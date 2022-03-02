@@ -14,14 +14,14 @@ require("dotenv").config();
 
 const app = express();
 
-// détecter ip serveur ici puis placer dans js client
+// détecter ip serveur à placer dans js client
 
 console.log("résultats recherche ip objet :", objetIp);
-console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
-// console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
+// console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
+console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
 // let socketServeur = objetIp['results']['Wi-Fi'][0]
-let socketServeur = objetIp['results']['OpenVPN TAP-Windows6'][0]
-// let socketServeur = objetIp["results"]["Ethernet 2"][0];
+// let socketServeur = objetIp['results']['OpenVPN TAP-Windows6'][0]
+let socketServeur = objetIp["results"]["Ethernet 2"][0];
 
 const config = {
   port: process.env.PORT || 8080,
@@ -59,32 +59,36 @@ app.get("/jeu", (req, res) => {
   }
 });
 
+const hallOfFame = [];
 
 app.get("/highscore", (req, res) => {
-  Database.User.find({},{ _id:0, gamertag: 1, victories :1}).sort({victories: -1}).limit(10)
-  .then((winners) => {
-    console.log('log sur route highscore',winners)
-    hallOfFame.splice(0,9);
-    for(let i=0; i< winners.length; i++){
-      hallOfFame.push(winners[i])
-      console.log('push hall of fame :', hallOfFame)
-    }
-    console.log('hallOfFame après bouclage :', hallOfFame)
-  
-})
-
-  res.render("highscore.pug", {
-    premier: `${hallOfFame[0]}`, 
-    deuxieme: `${hallOfFame[1]}`, 
-    troisieme: `${hallOfFame[2]}`,
-    quatrieme: `${hallOfFame[3]}`,
-    cinquieme: `${hallOfFame[4]}`,
-    sixieme: `${hallOfFame[5]}`,
-    septieme: `${hallOfFame[6]}`,
-    huitieme: `${hallOfFame[7]}`,
-    neuvieme: `${hallOfFame[8]}`,
-    dixieme: `${hallOfFame[9]}`
-  });
+  (async () => {
+    Database.User.find({}, { _id: 0, gamertag: 1, victories: 1 })
+      .sort({ victories: -1 })
+      .limit(10)
+      .then((winners) => {
+        console.log("log sur route highscore", winners);
+        hallOfFame.splice(0, 9);
+        for (let i = 0; i < winners.length; i++) {
+          hallOfFame.push(winners[i]);
+          console.log("push hall of fame :", hallOfFame);
+        }
+        console.log("hallOfFame après bouclage :", hallOfFame);
+      });
+  })().then(
+    res.render("highscore.pug", {
+      premier: `${hallOfFame[0]}`,
+      deuxieme: `${hallOfFame[1]}`,
+      troisieme: `${hallOfFame[2]}`,
+      quatrieme: `${hallOfFame[3]}`,
+      cinquieme: `${hallOfFame[4]}`,
+      sixieme: `${hallOfFame[5]}`,
+      septieme: `${hallOfFame[6]}`,
+      huitieme: `${hallOfFame[7]}`,
+      neuvieme: `${hallOfFame[8]}`,
+      dixieme: `${hallOfFame[9]}`,
+    })
+  );
 });
 
 app.get("*", (req, res) => {
@@ -174,9 +178,10 @@ app.post("/login", (req, res) => {
             httpOnly: false,
             MaxAge: 1000 * 60 * 60,
           });
-          res.render("accueil.pug", {
-            message: "Vous pouvez vous rendre à la zone de jeu !",
-          });
+          // res.render("accueil.pug", {
+          //   message: "Vous pouvez vous rendre à la zone de jeu !",
+          // });
+          res.render("jeu.pug");
         }
       }
     })
@@ -190,32 +195,6 @@ app.post("/login", (req, res) => {
     });
 });
 
-const hallOfFame = [];
-
-// let topPlayers = Database.User.find({}, {_id:0, gamertag:1, victories:1}).sort({victories:-1})
-
-// (async function () {
-//   try {
-//     await Mongoose.connect(process.env.DB, { useNewUrlParser: true });
-//     let topPlayers = await Database.User.find(
-//       {},
-//       { _id: 0, gamertag: 1, victories: 1 }
-//     )
-//     // .sort({ victories: -1 });
-//     console.log("topPlayers en BDD :", topPlayers);
-//     for (let i = 0; i < topPlayers.length; i++) {
-//       hallOfFame[i].push(topPlayers[i]);
-//     }
-
-//     console.log("hallOfFame dans iife :", hallOfFame);
-//     return hallOfFame;
-//   } catch (err) {
-//     console.log("erreur recherche topplayers", err);
-//   }
-// })();
-
-// console.log("hallOfFame :", hallOfFame);
-
 const httpServer = app.listen(config.port, () => {
   console.log(`Le serveur écoute le port ${config.port}`);
 });
@@ -227,13 +206,7 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const randomColor = require("randomcolor");
 const { setInterval } = require("timers");
-const { resourceLimits } = require("worker_threads");
 const { default: results } = require("./public/js/ip");
-const { topTenPlayers } = require("./public/js/highScore");
-// const { Mongoose } = require("mongoose");
-// const Mongoose = require('mongoose');
-// const User = require('./public/js/db')
-// const url = process.env.DB;
 
 const allPlayers = {};
 let sensPoupee = true;
@@ -393,15 +366,20 @@ ioServer.on("connection", (socket) => {
     // console.log('victoires dans mongo avant ajout score',victories['victories'])
 
     victories = victories["victories"];
-    // console.log('victories :', victories)
+    console.log("victories :", victories);
     let nouvelleVictoire = parseFloat(victories) + 1;
     // console.log('nouvellevictoire :', nouvelleVictoire)
 
     const gagnant = await Database.User.findOneAndUpdate(
       { gamertag: dataJoueur["gamertag"] },
       { victories: `${nouvelleVictoire}` },
-      { new: true }
-      // console.log("victoire ajoutée :" +`${dataJoueur["gamertag"]}` +" " +`${nouvelleVictoire}`)
+      { new: true },
+      console.log(
+        "victoire ajoutée :" +
+          `${dataJoueur["gamertag"]}` +
+          " " +
+          `${nouvelleVictoire}`
+      )
     );
     console.log("gagnant", gagnant);
     partieEnCours = false;
