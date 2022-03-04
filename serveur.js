@@ -25,7 +25,7 @@ let socketServeur = objetIp["results"]["Ethernet 2"][0];
 
 const config = {
   port: process.env.PORT || 8080,
-  host: process.env.HOST || objetIp["results"]["Wi-Fi"][0],
+  host: process.env.HOST || "https://squidsun.herokuapp.com",
 };
 
 app.use("/css", express.static(path.join(__dirname, "public/css")));
