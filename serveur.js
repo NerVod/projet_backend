@@ -105,32 +105,40 @@ app.post("/register", (req, res) => {
     return;
   }
 
-  Database.User.create({
-    email: req.body.email,
-    gamertag: req.body.gamertag,
-    password: bcrypt.hashSync(req.body.password, salt),
-    victories: 0,
-  })
-    .then((user) => {
-      console.log("compte créé dans BDD");
-      const token = jwt.sign(
-        { id: user._id, email: user.email, gamertag: user.gamertag },
-        process.env.JWTPRIVATEKEY
-      );
-      console.log("token créé à la création du compte :", token);
-      // res.json({ success: true, token: token })
-      res.setHeader("Authorization", "Bearer " + token);
-      res.render("accueil.pug", {
-        message: "Vous pouvez commencer la partie !",
-      });
-    })
-    .catch((err) => {
-      // res.json({ success: false, error : err})
-      console.error(err);
+  Database.User.findOne({ email: req.body.email }).then((user) => {
+    if (user) {
       res.render("register.pug", {
-        message: "Erreur d'identification, veuillez recommencer !",
+        message: "Cet email existe déjà, Veuillez en saisir un nouveau !",
       });
-    });
+    } else {
+      Database.User.create({
+        email: req.body.email,
+        gamertag: req.body.gamertag,
+        password: bcrypt.hashSync(req.body.password, salt),
+        victories: 0,
+      })
+        .then((user) => {
+          console.log("compte créé dans BDD");
+          const token = jwt.sign(
+            { id: user._id, email: user.email, gamertag: user.gamertag },
+            process.env.JWTPRIVATEKEY
+          );
+          console.log("token créé à la création du compte :", token);
+          // res.json({ success: true, token: token })
+          res.setHeader("Authorization", "Bearer " + token);
+          res.render("accueil.pug", {
+            message: "Vous pouvez commencer la partie !",
+          });
+        })
+        .catch((err) => {
+          // res.json({ success: false, error : err})
+          console.error(err);
+          res.render("register.pug", {
+            message: "Erreur d'identification, veuillez recommencer !",
+          });
+        });
+    }
+  });
 });
 
 ///////////////// connexion au compte utilisateur/////////////////////////////////////
@@ -252,6 +260,11 @@ ioServer.on("connection", (socket) => {
   let startToggle;
 
   socket.on("start", () => {
+    for (playerId in allPlayers) {
+      const player = allPlayers[playerId];
+
+      ioServer.emit("updateOrCreatePlayer", player);
+    }
     partieEnCours = true;
     hideStart();
     rebase();
