@@ -11,7 +11,7 @@ const Cookies = require("cookies");
 const objetIp = require("./public/js/ip");
 const Mongoose = require("mongoose");
 require("dotenv").config();
-
+const port = process.env.PORT || 5000;
 const app = express();
 
 // détecter ip serveur à placer dans js client
@@ -195,8 +195,8 @@ app.post("/login", (req, res) => {
     });
 });
 
-const httpServer = app.listen(process.env.PORT, process.env.HOST, () => {
-  console.log(`Le serveur écoute le port ${process.env.PORT}`);
+const httpServer = app.listen(port, process.env.HOST, () => {
+  console.log(`Le serveur écoute le port ${port}`);
 });
 
 //////////////////////////////////////////  serveur websocket //////////////////////////////////////////
