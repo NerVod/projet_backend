@@ -20,10 +20,10 @@ console.log("résultats recherche ip objet :", objetIp);
 console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
 
 
-const config = {
-  port: process.env.PORT || 3000,
-  host: process.env.HOST || "https://squidsun.herokuapp.com",
-};
+// const config = {
+//   port: process.env.PORT || 3000,
+//   host: process.env.HOST || "https://squidsun.herokuapp.com",
+// };
 
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
@@ -196,8 +196,8 @@ app.post("/login", (req, res) => {
     });
 });
 
-const httpServer = app.listen(config.port, () => {
-  console.log(`Le serveur écoute le port ${config.port}`);
+const httpServer = app.listen(process.env.PORT, () => {
+  console.log(`Le serveur écoute le port ${process.env.PORT}`);
 });
 
 //////////////////////////////////////////  serveur websocket //////////////////////////////////////////
