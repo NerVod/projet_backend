@@ -19,7 +19,6 @@ const app = express();
 console.log("résultats recherche ip objet :", objetIp);
 console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
 
-
 // const config = {
 //   port: process.env.PORT || 3000,
 //   host: process.env.HOST || "0.0.0.0",
@@ -196,7 +195,7 @@ app.post("/login", (req, res) => {
     });
 });
 
-const httpServer = app.listen(process.env.PORT, () => {
+const httpServer = app.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(`Le serveur écoute le port ${process.env.PORT}`);
 });
 
