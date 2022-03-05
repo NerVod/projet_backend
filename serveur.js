@@ -195,7 +195,7 @@ app.post("/login", (req, res) => {
     });
 });
 
-const httpServer = app.listen(process.env.PORT, "0.0.0.0", () => {
+const httpServer = app.listen(process.env.PORT, process.env.HOST, () => {
   console.log(`Le serveur écoute le port ${process.env.PORT}`);
 });
 
