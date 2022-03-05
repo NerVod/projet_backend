@@ -12,7 +12,7 @@ const objetIp = require("./public/js/ip");
 const Mongoose = require("mongoose");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
-const favicon = require("serve-favicon");
+const favicon = require('serve-favicon')
 const app = express();
 
 // détecter ip serveur à placer dans js client
@@ -39,8 +39,7 @@ app.use(cors());
 app.set("view-engine", "pug");
 
 app.get("/", (req, res) => {
-  // res.render("accueil.pug");
-  res.send("test.html");
+  res.render("accueil.pug");
 });
 app.get("/register", (req, res) => {
   res.render("register.pug");
