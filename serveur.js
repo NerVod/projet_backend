@@ -24,7 +24,7 @@ console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
 let socketServeur = objetIp["results"]["Ethernet 2"][0];
 
 const config = {
-  port: process.env.PORT || 8080,
+  port: process.env.PORT || 3000,
   host: process.env.HOST || "https://squidsun.herokuapp.com",
 };
 
