@@ -22,7 +22,7 @@ console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
 
 // const config = {
 //   port: process.env.PORT || 3000,
-//   host: process.env.HOST || "https://squidsun.herokuapp.com",
+//   host: process.env.HOST || "0.0.0.0",
 // };
 
 app.use("/css", express.static(path.join(__dirname, "public/css")));
