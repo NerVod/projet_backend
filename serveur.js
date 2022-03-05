@@ -17,11 +17,8 @@ const app = express();
 // détecter ip serveur à placer dans js client
 
 console.log("résultats recherche ip objet :", objetIp);
-// console.log('résultats recherche ip :', objetIp['results']['Wi-Fi'][0]);
 console.log("résultats recherche ip :", objetIp["results"]["Ethernet 2"][0]);
-// let socketServeur = objetIp['results']['Wi-Fi'][0]
-// let socketServeur = objetIp['results']['OpenVPN TAP-Windows6'][0]
-let socketServeur = objetIp["results"]["Ethernet 2"][0];
+
 
 const config = {
   port: process.env.PORT || 3000,
@@ -49,7 +46,6 @@ app.get("/register", (req, res) => {
 
 app.get("/jeu", (req, res) => {
   let cookie = req.headers.cookie;
-  // console.log("detection du cookie :", cookie);
   if (cookie) {
     res.render("jeu.pug");
   } else {
@@ -186,9 +182,6 @@ app.post("/login", (req, res) => {
             httpOnly: false,
             MaxAge: 1000 * 60 * 60,
           });
-          // res.render("accueil.pug", {
-          //   message: "Vous pouvez vous rendre à la zone de jeu !",
-          // });
           res.render("jeu.pug");
         }
       }
@@ -221,11 +214,11 @@ let sensPoupee = true;
 let partieEnCours = false;
 
 ioServer.on("connection", (socket) => {
-  console.log("io connecté avec cookie:" + socket.request.headers.cookie);
+  // console.log("io connecté avec cookie:" + socket.request.headers.cookie);
 
   let uniquePlayer = socket.request.headers.cookie;
   let parsedToken = uniquePlayer.substring(13);
-  console.log("parsedToken", parsedToken);
+  // console.log("parsedToken", parsedToken);
   let dataJoueur = jwt.verify(parsedToken, process.env.JWTPRIVATEKEY);
   // console.log(dataJoueur["id"]);
   // console.log(dataJoueur["gamertag"]);
