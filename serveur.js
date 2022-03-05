@@ -36,7 +36,7 @@ app.use(cors());
 
 app.set("view-engine", "pug");
 
-app.get("/", (req, res) => {
+app.use("/", (req, res) => {
   res.render("accueil.pug");
 });
 app.get("/register", (req, res) => {
