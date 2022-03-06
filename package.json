@@ -40,6 +40,6 @@
     "socket.io-cookie-parser": "^1.0.0"
   },
   "engines": {
-    "node": "16.13.0"
+    "node": "^16.13.0"
   }
 }
