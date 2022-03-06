@@ -39,8 +39,12 @@ app.use(cors());
 app.set("view-engine", "pug");
 
 app.get("/", (req, res) => {
-  res.render("accueil.pug");
+  res.send("index.html");
 });
+
+// app.get("/", (req, res) => {
+//   res.render("accueil.pug");
+// });
 app.get("/register", (req, res) => {
   res.render("register.pug");
 });
