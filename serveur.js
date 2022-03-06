@@ -12,7 +12,7 @@ const objetIp = require("./public/js/ip");
 const Mongoose = require("mongoose");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
-const favicon = require('serve-favicon')
+const favicon = require("serve-favicon");
 const app = express();
 
 // détecter ip serveur à placer dans js client
@@ -65,7 +65,7 @@ app.get("/highscore", (req, res) => {
       .limit(10)
       .then((winners) => {
         console.log("log sur route highscore", winners);
-        hallOfFame.splice(0, 9);
+        hallOfFame.splice(0);
         for (let i = 0; i < winners.length; i++) {
           hallOfFame.push(winners[i]);
           console.log("push hall of fame :", hallOfFame);
@@ -197,7 +197,7 @@ app.post("/login", (req, res) => {
     });
 });
 
-const httpServer = app.listen(port, process.env.HOST, () => {
+const httpServer = app.listen(port, () => {
   console.log(`Le serveur écoute le port ${port}`);
 });
 
@@ -208,7 +208,6 @@ const Server = io.Server;
 const ioServer = new Server(httpServer);
 const randomColor = require("randomcolor");
 const { setInterval } = require("timers");
-const { default: results } = require("./public/js/ip");
 
 const allPlayers = {};
 let sensPoupee = true;
